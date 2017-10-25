@@ -5,6 +5,7 @@ import com.conveyal.gtfs.storage.StorageException;
 import com.vividsolutions.jts.awt.PointShapeFactory;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import org.apache.commons.dbutils.DbUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +27,9 @@ public class JDBCTableReader<T extends Entity> implements TableReader<T> {
 
     private static final Logger LOG = LoggerFactory.getLogger(JDBCTableReader.class);
 
+    // See https://www.postgresql.org/docs/9.6/static/errcodes-appendix.html
+    public static final String SQL_STATE_UNDEFINED_TABLE = "42P01";
+
     private final Table specTable;
     private final EntityPopulator<T> entityPopulator;
 
@@ -43,21 +47,23 @@ public class JDBCTableReader<T extends Entity> implements TableReader<T> {
         this.specTable = specTable;
         // Prepare a mapping from column names to indexes. This allows us to avoid throwing exceptions on missing columns.
         // We do this in the constructor to avoid rebuilding the mapping every time we fetch a single entity from the table.
+        // No entry value defaults to zero, and SQL columns are 1-based.
+        columnForName = new TObjectIntHashMap<>();
+        selectClause = "select * from " + qualifiedTableName;
         // Try-with-resources will automatically close the connection when the try block exits.
         try (Connection connection = dataSource.getConnection()) {
-            selectClause = "select * from " + qualifiedTableName;
             LOG.info("Connected to {}", qualifiedTableName);
             PreparedStatement selectAll = connection.prepareStatement(
                     selectClause, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, CLOSE_CURSORS_AT_COMMIT);
             ResultSetMetaData metaData = selectAll.getMetaData();
             int nColumns = metaData.getColumnCount();
-            // No entry value defaults to zero, and SQL columns are 1-based.
-            columnForName = new TObjectIntHashMap<>(nColumns);
             for (int c = 1; c <= nColumns; c++) {
                 columnForName.put(metaData.getColumnName(c), c);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            if (specTable.isRequired()) {
+                LOG.warn("Could not connect to required table " + qualifiedTableName);
+            }
         }
     }
 
@@ -115,7 +121,7 @@ public class JDBCTableReader<T extends Entity> implements TableReader<T> {
     }
 
     /**
-     * @return the total number of rows in this table
+     * @return the total number of rows in this table, or -1 if the table does not exist.
      */
     public int getRowCount() {
         try {
@@ -128,7 +134,12 @@ public class JDBCTableReader<T extends Entity> implements TableReader<T> {
             connection.close();
             return nRows;
         } catch (SQLException ex) {
-            throw new StorageException(ex);
+            if (SQL_STATE_UNDEFINED_TABLE.equals(ex.getSQLState())) {
+                // Table is missing, signal this to the caller.
+                return -1;
+            } else {
+                throw new StorageException(ex);
+            }
         }
     }
 
@@ -173,9 +184,20 @@ public class JDBCTableReader<T extends Entity> implements TableReader<T> {
                 LOG.info(preparedStatement.toString());
                 results = preparedStatement.executeQuery();
                 hasMoreEntities = results.next();
+            } catch (SQLException sqlEx) {
+                DbUtils.closeQuietly(connection);
+                if (SQL_STATE_UNDEFINED_TABLE.equals(sqlEx.getSQLState())) {
+                    // Table is just missing, iterate as if it were an empty table.
+                    LOG.info("Table {} did not exist, returning an iterator as if it were empty.", qualifiedTableName);
+                    results = null;
+                    hasMoreEntities = false;
+                }
             } catch (Exception ex) {
+                DbUtils.closeQuietly(connection);
                 throw new StorageException(ex);
             }
+            // Note that we close the connection in the catch clauses above, not in a finally clause.
+            // This is because we want to leave the connection open for the iterator to continue fetching results.
         }
 
         /**
@@ -203,6 +225,7 @@ public class JDBCTableReader<T extends Entity> implements TableReader<T> {
                 }
                 return entity;
             } catch (Exception ex) {
+                DbUtils.closeQuietly(connection);
                 throw new StorageException(ex);
             }
         }
