@@ -4,6 +4,8 @@ import com.conveyal.gtfs.error.GTFSError;
 import com.conveyal.gtfs.error.NewGTFSError;
 import com.conveyal.gtfs.error.SQLErrorStorage;
 import com.conveyal.gtfs.model.*;
+import com.conveyal.gtfs.stats.FeedStats;
+import com.conveyal.gtfs.stats.model.FeedStatistic;
 import com.conveyal.gtfs.validator.*;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
@@ -122,6 +124,10 @@ public class Feed {
         // update validation result fields
         validationResult.errorCount = totalValidationErrors;
         validationResult.validationTime = totalValidationTime;
+        
+        //5t add feedStsistic
+        //FeedStats stats = gtfsFeed.calculateStats();
+        //validationResult.feedStatistic = new FeedStatistic(stats);
 
         // FIXME: Validation result date and int[] fields need to be set somewhere.
         return validationResult;

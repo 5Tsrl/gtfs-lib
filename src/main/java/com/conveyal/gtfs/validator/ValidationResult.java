@@ -3,6 +3,8 @@ package com.conveyal.gtfs.validator;
 import java.awt.geom.Rectangle2D;
 import java.io.Serializable;
 import com.conveyal.gtfs.model.Pattern;
+import com.conveyal.gtfs.stats.model.FeedStatistic;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -31,6 +33,8 @@ public class ValidationResult implements Serializable {
     public GeographicBounds boundsWithoutOutliers = new GeographicBounds();
     public long validationTime;
     public List<Pattern> patterns;
+    public FeedStatistic feedStatistic;
+    
 
     public static class GeographicBounds implements Serializable {
         private static final long serialVersionUID = 1L;
