@@ -78,11 +78,27 @@ public class ServiceValidator extends TripValidator {
             // ERR
             return;
         }
+
+        //Distance traveled
+        int firstStopDistTraveled = (int) stopTimes.get(0).shape_dist_traveled;
+        int lastStopDistTraveled  = (int) stopTimes.get(stopTimes.size() - 1).shape_dist_traveled;
+        if (firstStopDistTraveled == Entity.INT_MISSING || lastStopDistTraveled == Entity.INT_MISSING) {
+            // ERR
+            return;
+        }
+        int tripDistanceMeters = lastStopDistTraveled - firstStopDistTraveled;
+        if (tripDistanceMeters <= 0) {
+            // ERR
+            return;
+        }
+
         // Get the map from modes to service durations in seconds for this trip's service ID.
         // Create a new empty map if it doesn't yet exist.
         ServiceInfo serviceInfo = serviceInfoForServiceId.computeIfAbsent(trip.service_id, ServiceInfo::new);
         // Increment the service duration for this trip's transport mode and service ID.
         serviceInfo.durationByRouteType.adjustOrPutValue(route.route_type, tripDurationSeconds, tripDurationSeconds);
+        // Increment the service travel distance for this trip's transport mode and service ID.
+        serviceInfo.distanceByRouteType.adjustOrPutValue(route.route_type, tripDistanceMeters, tripDistanceMeters);
         // Record which trips occur on each service_id.
         serviceInfo.tripIds.add(trip.trip_id);
         // TODO validate mode codes
@@ -206,6 +222,8 @@ public class ServiceValidator extends TripValidator {
                 validationResult.dailyMetroSeconds[d] = dateInfo.durationByRouteType.get(1);
                 validationResult.dailyRailSeconds[d] = dateInfo.durationByRouteType.get(2);
                 validationResult.dailyTotalSeconds[d] = dateInfo.getTotalServiceDurationSeconds();
+                validationResult.dailyTotalMeters[d] = dateInfo.getTotalServiceDistanceMeters();
+
                 validationResult.dailyTripCounts[d] = dateInfo.tripCount;
                 if (dateInfo.getTotalServiceDurationSeconds() <= 0) {
                     // Check for low or zero service, which seems to happen even when services are defined.
@@ -314,6 +332,7 @@ public class ServiceValidator extends TripValidator {
 
         final String serviceId;
         TIntIntHashMap durationByRouteType = new TIntIntHashMap();
+        TIntIntHashMap distanceByRouteType = new TIntIntHashMap();
         Set<LocalDate> datesActive = new HashSet<>();
         Set<String> tripIds = new HashSet<>();
 
@@ -325,12 +344,17 @@ public class ServiceValidator extends TripValidator {
             return Arrays.stream(durationByRouteType.values()).sum();
         }
 
+        public int getTotalServiceDistanceMeters() {
+            return Arrays.stream(distanceByRouteType.values()).sum();
+        }
+
     }
 
     private static class DateInfo {
 
         final LocalDate date;
         TIntIntHashMap durationByRouteType = new TIntIntHashMap();
+        TIntIntHashMap distanceByRouteType = new TIntIntHashMap();
         int tripCount = 0; // Trip count could also in theory be broken down by route type.
         Set<String> servicesActive = new HashSet<>();
 
@@ -342,11 +366,19 @@ public class ServiceValidator extends TripValidator {
             return Arrays.stream(durationByRouteType.values()).sum();
         }
 
+        public int getTotalServiceDistanceMeters() {
+            return Arrays.stream(distanceByRouteType.values()).sum();
+        }
+
         public void add (ServiceInfo serviceInfo) {
             servicesActive.add(serviceInfo.serviceId);
             serviceInfo.durationByRouteType.forEachEntry((routeType, serviceDurationSeconds) -> {
                 durationByRouteType.adjustOrPutValue(routeType, serviceDurationSeconds, serviceDurationSeconds);
                 return true; // Continue iteration.
+            });
+            serviceInfo.distanceByRouteType.forEachEntry((routeType, serviceDistanceMeters) -> {
+            	distanceByRouteType.adjustOrPutValue(routeType, serviceDistanceMeters, serviceDistanceMeters);
+            	return true; // Continue iteration.
             });
             tripCount += serviceInfo.tripIds.size();
         }
