@@ -209,6 +209,7 @@ public class ServiceValidator extends TripValidator {
             validationResult.dailyMetroSeconds = new int[nDays];
             validationResult.dailyRailSeconds = new int[nDays];
             validationResult.dailyTotalSeconds = new int[nDays];
+            validationResult.dailyTotalMeters = new int[nDays];
             validationResult.dailyTripCounts = new int[nDays];
             for (int d = 0; d < nDays; d++) {
                 LocalDate date = firstDate.plusDays(d); // current date being processed
