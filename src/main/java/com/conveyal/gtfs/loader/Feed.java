@@ -126,7 +126,7 @@ public class Feed {
         LOG.info("{} validators completed in {} milliseconds.", feedValidators.size(), totalValidationTime);
 
         // update validation result fields
-        validationResult.errorCount = totalValidationErrors;
+        validationResult.errorCount = errorStorage.getErrorCount(); //totalValidationErrors
         validationResult.validationTime = totalValidationTime;
 
         // FIXME: Validation result date and int[] fields need to be set somewhere.
