@@ -87,7 +87,7 @@ public class ServiceValidator extends TripValidator {
             return;
         }
         int tripDistanceMeters = lastStopDistTraveled - firstStopDistTraveled;
-        if (tripDistanceMeters <= 0) {
+        if (tripDistanceMeters < 0) {
             // ERR
             return;
         }
