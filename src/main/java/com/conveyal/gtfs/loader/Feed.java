@@ -35,7 +35,7 @@ public class Feed {
     // The unique database schema name for this particular feed, including the separator charater (dot).
     // This may be the empty string if the feed is stored in the root ("public") schema.
     public final String tablePrefix;
-
+    public final TableReader<FeedInfo> feedInfo;
     public final TableReader<Agency> agencies;
     public final TableReader<Calendar> calendars;
     public final TableReader<CalendarDate> calendarDates;
@@ -60,6 +60,7 @@ public class Feed {
         // Ensure separator dot is present
         if (tablePrefix != null && !tablePrefix.endsWith(".")) tablePrefix += ".";
         this.tablePrefix = tablePrefix == null ? "" : tablePrefix;
+        feedInfo = new JDBCTableReader(Table.FEED_INFO, dataSource, tablePrefix, EntityPopulator.FEED_INFO);
         agencies = new JDBCTableReader(Table.AGENCY, dataSource, tablePrefix, EntityPopulator.AGENCY);
 //        fares = new JDBCTableReader(Table.FARES, dataSource, tablePrefix, EntityPopulator.FARE);
         calendars = new JDBCTableReader(Table.CALENDAR, dataSource, tablePrefix, EntityPopulator.CALENDAR);

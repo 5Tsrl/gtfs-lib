@@ -39,6 +39,18 @@ public interface EntityPopulator<T> {
 
     public T populate (ResultSet results, TObjectIntMap<String> columnForName) throws SQLException;
 
+    public static final EntityPopulator<FeedInfo> FEED_INFO = (result, columnForName) -> {
+        FeedInfo feedInfo = new FeedInfo();
+        feedInfo.feed_publisher_name = getStringIfPresent(result, "feed_publisher_name", columnForName);
+        feedInfo.feed_publisher_url  = getUrlIfPresent   (result, "feed_publisher_url", columnForName);
+        feedInfo.feed_lang           = getStringIfPresent(result, "feed_lang", columnForName);
+        feedInfo.feed_start_date     = getDateIfPresent  (result, "feed_start_date", columnForName);
+        feedInfo.feed_end_date       = getDateIfPresent  (result, "feed_end_date", columnForName);
+        feedInfo.feed_version        = getStringIfPresent(result, "feed_version", columnForName);
+        feedInfo.feed_id             = getStringIfPresent(result, "feed_id", columnForName);
+        return feedInfo;
+    };
+
     public static final EntityPopulator<Agency> AGENCY = (result, columnForName) -> {
         Agency agency = new Agency();
         agency.agency_id       = getStringIfPresent(result, "agency_id", columnForName);
