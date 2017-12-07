@@ -17,6 +17,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Groups trips together into "patterns" that share the same sequence of stops.
@@ -39,16 +40,16 @@ public class PatternFinderValidator extends TripValidator {
         // As we hit each trip, accumulate them into the wrapped PatternFinder object.
         patternFinder.processTrip(trip, stopTimes);
     }
-
-    @Override
-    public void complete(ValidationResult validationResult) {
+    //we need stopById for rename process
+    //@Override
+    public void complete(ValidationResult validationResult, Map<String, Stop> stopById) {
         LOG.info("Updating trips with pattern IDs...");
         // Return patterns in the result
         // TODO should we really return them in the validation result, or just put them in the DB?
         // The thing is, in a relational database this would require at least two tables and extra columns in the trips.
         // patterns, stopsInPatterns, patternForTrip. Though we could in fact get the stop sequence from any example trip in the pattern.
         // FIXME In the editor we need patterns to exist separately from and before trips themselves, so me make another table.
-        List<Pattern> patterns = patternFinder.createPatternObjects();
+        List<Pattern> patterns = patternFinder.createPatternObjects(stopById);
         try {
             // TODO this assumes gtfs-lib is using an SQL database and not a MapDB.
             // Maybe we should just create patterns in a separate step, but that would mean iterating over the stop_times twice.
@@ -69,7 +70,7 @@ public class PatternFinderValidator extends TripValidator {
             PreparedStatement updateTripStatement = connection.prepareStatement(
                     String.format("update %s set pattern_id = ? where trip_id = ?", tripsTableName));
             PreparedStatement insertPatternStatement = connection.prepareStatement(
-                    String.format("insert into %s values (?, ?)", patternsTableName));
+                    String.format("insert into %s values (?, ?, ?)", patternsTableName));
             PreparedStatement insertPatternStopStatement = connection.prepareStatement(
                     String.format("insert into %s values (?, ?, ?)", patternStopsTableName));
             int batchSize = 0;
@@ -78,6 +79,7 @@ public class PatternFinderValidator extends TripValidator {
                 // First, create a pattern relation.
                 insertPatternStatement.setString(1, pattern.pattern_id);
                 insertPatternStatement.setString(2, pattern.route_id);
+                insertPatternStatement.setString(3, pattern.name);
                 insertPatternStatement.addBatch();
                 // Next, add pattern_stops relations for all the stops on this pattern.
                 int stop_sequence = 0;

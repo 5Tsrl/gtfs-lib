@@ -71,7 +71,7 @@ public class PatternFinder {
      * Once all trips have been processed, call this method to produce the final Pattern objects representing all the
      * unique sequences of stops encountered.
      */
-    public List<Pattern> createPatternObjects () {
+    public List<Pattern> createPatternObjects (Map<String, Stop> stopById) {
         int nextPatternId = 0;
         // Create an in-memory list of Patterns because we will later rename them before inserting them into storage.
         List<Pattern> patterns = new ArrayList<>();
@@ -84,7 +84,7 @@ public class PatternFinder {
             patterns.add(pattern);
         }
         // TODO Attempt to assign more human-readable names to all these patterns.
-        // renamePatterns(patterns, stopById);
+        renamePatterns(patterns, stopById);
         LOG.info("Total patterns: {}", tripsForPattern.keySet().size());
         return patterns;
     }

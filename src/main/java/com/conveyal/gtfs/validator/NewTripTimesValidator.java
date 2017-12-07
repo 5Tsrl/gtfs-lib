@@ -171,7 +171,11 @@ public class NewTripTimesValidator extends FeedValidator {
      */
     public void complete (ValidationResult validationResult) {
         for (TripValidator tripValidator : tripValidators) {
-            tripValidator.complete(validationResult);
+        	if(tripValidator instanceof PatternFinderValidator) {
+        		((PatternFinderValidator) tripValidator).complete(validationResult, stopById);
+        	} else {
+        		tripValidator.complete(validationResult);
+        	}
         }
     }
 
