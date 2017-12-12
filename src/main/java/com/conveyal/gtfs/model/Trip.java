@@ -21,6 +21,7 @@ public class Trip extends Entity {
     public int    bikes_allowed;
     public int    wheelchair_accessible;
     public String feed_id;
+    public String pattern_id;
 
     @Override
     public String getId() {

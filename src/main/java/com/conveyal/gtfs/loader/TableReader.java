@@ -16,5 +16,9 @@ public interface TableReader <T extends Entity> extends Iterable<T> {
     public Iterable<T> getAll ();
 
     public Iterable<T> getAllOrdered ();
+    
+    public int getRowCount();
+    
+    public Iterable<T> getFiltered (String filterField, String id);
 
 }

@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-public class Pattern implements Serializable {
+public class Pattern  extends Entity {
     public static final long serialVersionUID = 1L;
 
     // A unique ID for this jouney pattern / stop pattern
@@ -37,6 +37,7 @@ public class Pattern implements Serializable {
     public static Joiner joiner = Joiner.on("-").skipNulls();
     public String feed_id;
 
+	public Pattern() {}
     // TODO: Should a Pattern be generated for a single trip or a set of trips that share the same ordered stop list?
 
     /**

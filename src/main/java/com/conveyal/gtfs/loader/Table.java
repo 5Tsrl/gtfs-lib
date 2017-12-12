@@ -167,7 +167,14 @@ public class Table {
         new StringField("block_id",  OPTIONAL),
         new StringField("shape_id",  OPTIONAL),
         new ShortField("wheelchair_accessible", OPTIONAL, 2),
-        new ShortField("bikes_allowed", OPTIONAL, 2)
+        new ShortField("bikes_allowed", OPTIONAL, 2),
+        new StringField("pattern_id", OPTIONAL)
+    );
+    
+    public static final Table PATTERNS = new Table("patterns", Pattern.class, OPTIONAL,
+            new StringField("pattern_id",  REQUIRED),
+            new StringField("route_id",  REQUIRED),
+            new StringField("description",  OPTIONAL)
     );
 
     public Table (String name, Class<? extends Entity> entityClass, Requirement required, Field... fields) {

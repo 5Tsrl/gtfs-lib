@@ -45,6 +45,9 @@ public class Feed {
     public final TableReader<Trip>  trips;
     public final TableReader<ShapePoint> shapePoints;
     public final TableReader<StopTime>   stopTimes;
+    // tables added by validators
+    public final TableReader<Pattern> patterns;
+    
 
     /* A place to accumulate errors while the feed is loaded. Tolerate as many errors as possible and keep on loading. */
     // TODO remove this and use only NewGTFSErrors in Validators, loaded into a JDBC table
@@ -70,6 +73,7 @@ public class Feed {
         trips = new JDBCTableReader(Table.TRIPS, dataSource, tablePrefix, EntityPopulator.TRIP);
         shapePoints = new JDBCTableReader(Table.SHAPES, dataSource, tablePrefix, EntityPopulator.SHAPE_POINT);
         stopTimes = new JDBCTableReader(Table.STOP_TIMES, dataSource, tablePrefix, EntityPopulator.STOP_TIME);
+        patterns = new JDBCTableReader(Table.PATTERNS, dataSource, tablePrefix, EntityPopulator.PATTERN);
     }
 
     /**

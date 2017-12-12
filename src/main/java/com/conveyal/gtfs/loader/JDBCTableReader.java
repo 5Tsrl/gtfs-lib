@@ -119,10 +119,20 @@ public class JDBCTableReader<T extends Entity> implements TableReader<T> {
         // An iterable has a single method that produces an iterator.
         return () -> { return new EntityIterator(null, true); };
     }
+    
+    /**
+     * Get all the items from this table with the given ID, in unspecified order and filtered 
+     */
+    @Override
+    public Iterable<T> getFiltered (String filterField, String id) {
+        // An iterable has a single method that produces an iterator.
+        return () -> { return new EntityIterator(filterField, id); };
+    }
 
     /**
      * @return the total number of rows in this table, or -1 if the table does not exist.
      */
+    @Override
     public int getRowCount() {
         try {
             Connection connection = dataSource.getConnection();
@@ -150,52 +160,67 @@ public class JDBCTableReader<T extends Entity> implements TableReader<T> {
         private ResultSet results;
 
         EntityIterator (String id, boolean ordered) {
+
+            String idField = specTable.getKeyFieldName();
+            String orderByField = null;
+            if(ordered)
+            	orderByField = specTable.getOrderFieldName();
+            
+            this.execSql(idField, id, orderByField);
+        }
+        
+        //5t
+        EntityIterator (String idField, String id) {
+            this.execSql(idField, id, null);
+        }
+        
+        
+        
+        private void execSql(String filterField, String id, String orderByField) {
             try {
-                connection = dataSource.getConnection();
-                PreparedStatement preparedStatement;
-                String sql = selectClause;
-                String idField = specTable.getKeyFieldName();
-                String orderByField = specTable.getOrderFieldName();
-                if (id != null) {
-                    sql += String.format(" where %s = ?", idField);
-                }
-                if (ordered && orderByField != null) {
-                    sql += String.format(" order by %s, %s", idField, orderByField);
-                }
-                preparedStatement =
-                        connection.prepareStatement(sql, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, CLOSE_CURSORS_AT_COMMIT);
-                if (id != null && orderByField == null) {
-                    // Select a particular ID on a table without sequence numbers. There should be only one result.
-                    // Do not use cursor.
-                    preparedStatement.setFetchSize(0);
-                } else {
-                    // Use a cursor, but fetch a lot of rows at once.
-                    // Setting fetchSize to something other than zero enables server-side cursor use.
-                    // This will only be effective if autoCommit=false though. Otherwise it fills up the memory with all rows.
-                    // By default prepared statements are forward-only and read-only (though we could set that explicitly).
-                    // Those settings allow cursors to be used efficiently.
-                    preparedStatement.setFetchSize(1000);
-                }
-                if (id != null) {
-                    // Fill the primary key into the prepared statement
-                    preparedStatement.setString(1, id);
-                }
-                // Display the SQL statement for clarity
-                LOG.info(preparedStatement.toString());
-                results = preparedStatement.executeQuery();
-                hasMoreEntities = results.next();
+	            connection = dataSource.getConnection();
+	            PreparedStatement preparedStatement;
+	            String sql = selectClause;
+	        	if (id != null) {
+	                sql += String.format(" where %s = ?", filterField);
+	            }
+	            if (orderByField != null) {
+	                sql += String.format(" order by %s, %s", filterField, orderByField);
+	            }
+	            preparedStatement =
+	                    connection.prepareStatement(sql, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, CLOSE_CURSORS_AT_COMMIT);
+	            if (id != null && orderByField == null) {
+	                // Select a particular ID on a table without sequence numbers. There should be only one result.
+	                // Do not use cursor.
+	                preparedStatement.setFetchSize(0);
+	            } else {
+	                // Use a cursor, but fetch a lot of rows at once.
+	                // Setting fetchSize to something other than zero enables server-side cursor use.
+	                // This will only be effective if autoCommit=false though. Otherwise it fills up the memory with all rows.
+	                // By default prepared statements are forward-only and read-only (though we could set that explicitly).
+	                // Those settings allow cursors to be used efficiently.
+	                preparedStatement.setFetchSize(1000);
+	            }
+	            if (id != null) {
+	                // Fill the primary key into the prepared statement
+	                preparedStatement.setString(1, id);
+	            }
+	            // Display the SQL statement for clarity
+	            LOG.info(preparedStatement.toString());
+	            results = preparedStatement.executeQuery();
+	            hasMoreEntities = results.next();
             } catch (SQLException sqlEx) {
-                DbUtils.closeQuietly(connection);
-                if (SQL_STATE_UNDEFINED_TABLE.equals(sqlEx.getSQLState())) {
-                    // Table is just missing, iterate as if it were an empty table.
-                    LOG.info("Table {} did not exist, returning an iterator as if it were empty.", qualifiedTableName);
-                    results = null;
-                    hasMoreEntities = false;
-                }
-            } catch (Exception ex) {
-                DbUtils.closeQuietly(connection);
-                throw new StorageException(ex);
-            }
+	            DbUtils.closeQuietly(connection);
+	            if (SQL_STATE_UNDEFINED_TABLE.equals(sqlEx.getSQLState())) {
+	                // Table is just missing, iterate as if it were an empty table.
+	                LOG.info("Table {} did not exist, returning an iterator as if it were empty.", qualifiedTableName);
+	                results = null;
+	                hasMoreEntities = false;
+	            }
+	        } catch (Exception ex) {
+	            DbUtils.closeQuietly(connection);
+	            throw new StorageException(ex);
+	        }
             // Note that we close the connection in the catch clauses above, not in a finally clause.
             // This is because we want to leave the connection open for the iterator to continue fetching results.
         }

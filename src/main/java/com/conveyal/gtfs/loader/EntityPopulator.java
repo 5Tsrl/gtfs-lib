@@ -120,6 +120,13 @@ public interface EntityPopulator<T> {
         return stop;
     };
 
+    public static final EntityPopulator<Pattern> PATTERN = (result, columnForName) -> {
+    	Pattern pattern = new Pattern();
+        pattern.pattern_id  = getStringIfPresent(result, "pattern_id",  columnForName);
+        pattern.route_id     = getStringIfPresent(result, "route_id",      columnForName);
+        pattern.name          = getStringIfPresent(result, "description", columnForName);
+        return pattern;
+    };
     public static final EntityPopulator<Trip> TRIP = (result, columnForName) -> {
         Trip trip = new Trip();
         trip.trip_id         = getStringIfPresent(result, "trip_id", columnForName);
@@ -132,6 +139,7 @@ public interface EntityPopulator<T> {
         trip.direction_id    = getIntIfPresent   (result, "direction_id", columnForName);
         trip.bikes_allowed   = getIntIfPresent   (result, "bikes_allowed", columnForName);
         trip.wheelchair_accessible = getIntIfPresent(result, "wheelchair_accessible", columnForName);
+        trip.pattern_id = getStringIfPresent(result, "pattern_id", columnForName);
         return trip;
     };
 
