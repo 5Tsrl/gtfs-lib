@@ -8,6 +8,8 @@ import com.conveyal.gtfs.storage.StorageException;
 import com.conveyal.gtfs.validator.*;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+
+import org.mapdb.BTreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +21,9 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.conveyal.gtfs.error.NewGTFSErrorType.VALIDATOR_FAILED;
 
@@ -45,6 +49,8 @@ public class Feed {
     public final TableReader<Trip>  trips;
     public final TableReader<ShapePoint> shapePoints;
     public final TableReader<StopTime>   stopTimes;
+    
+    public final Map<String, Service> services;
 
     /* A place to accumulate errors while the feed is loaded. Tolerate as many errors as possible and keep on loading. */
     // TODO remove this and use only NewGTFSErrors in Validators, loaded into a JDBC table
@@ -70,6 +76,48 @@ public class Feed {
         trips = new JDBCTableReader(Table.TRIPS, dataSource, tablePrefix, EntityPopulator.TRIP);
         shapePoints = new JDBCTableReader(Table.SHAPES, dataSource, tablePrefix, EntityPopulator.SHAPE_POINT);
         stopTimes = new JDBCTableReader(Table.STOP_TIMES, dataSource, tablePrefix, EntityPopulator.STOP_TIME);
+        
+        services = new HashMap<String, Service>();
+        
+        for (Calendar calendar : calendars) {
+			
+        	Service service = services.computeIfAbsent(calendar.service_id, Service::new);
+        	if (service.calendar != null) {
+        		// FIXME feed.errors.add(new DuplicateKeyError(tableName, row, "service_id"));
+        	} else {
+        		Calendar c = new Calendar();
+        		c.service_id = service.service_id;
+        		c.monday = calendar.monday;
+        		c.tuesday = calendar.tuesday;
+        		c.wednesday = calendar.wednesday;
+        		c.thursday = calendar.thursday;
+        		c.friday = calendar.friday;
+        		c.saturday = calendar.saturday;
+        		c.sunday = calendar.sunday;
+        		// TODO check valid dates
+        		c.start_date = calendar.start_date;
+        		c.end_date = calendar.end_date;
+        		//c.feed = calendar.feed_id;
+        		c.feed_id = calendar.feed_id;
+        		service.calendar = c;
+        	}
+		}
+        
+        for (CalendarDate calendarDate : calendarDates) {
+        	
+        	Service service = services.computeIfAbsent(calendarDate.service_id, Service::new);
+        	LocalDate date = calendarDate.date;
+        	if (service.calendar_dates.containsKey(date)) {
+        		//FIXME feed.errors.add(new DuplicateKeyError(tableName, row, "(service_id, date)"));
+        	} else {
+        		CalendarDate cd = new CalendarDate();
+        		cd.service_id = calendarDate.service_id;
+        		cd.date = date;
+        		cd.exception_type = calendarDate.exception_type;
+        		//cd.feed = feed;
+        		service.calendar_dates.put(date, cd);
+        	}
+		}
     }
 
     /**
