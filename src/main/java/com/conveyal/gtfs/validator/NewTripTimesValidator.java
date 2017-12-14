@@ -122,6 +122,7 @@ public class NewTripTimesValidator extends FeedValidator {
      * @param stopTimes must all have the same trip_id and be in order of increasing stop_sequence
      */
     private void processTrip (List<StopTime> stopTimes) {
+    	if(stopTimes.isEmpty()) return;
         if (++tripCount % 20_000 == 0) LOG.info("Validating trip {}", tripCount);
         // All stop times have the same trip_id, so we look it up right away.
         String tripId = stopTimes.get(0).trip_id;
