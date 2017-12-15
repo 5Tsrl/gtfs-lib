@@ -171,7 +171,8 @@ public class JDBCTableReader<T extends Entity> implements TableReader<T> {
         
         //5t
         EntityIterator (String idField, String id) {
-            this.execSql(idField, id, null);
+            //this.execSql(idField, id, null);
+        	this.execSql(idField, id, idField);
         }
         
         
@@ -179,11 +180,15 @@ public class JDBCTableReader<T extends Entity> implements TableReader<T> {
         private void execSql(String filterField, String id, String orderByField) {
             try {
 	            connection = dataSource.getConnection();
+	            //dataSource.wait();
 	            PreparedStatement preparedStatement;
 	            String sql = selectClause;
 	        	if (id != null) {
 	                sql += String.format(" where %s = ?", filterField);
 	            }
+	        	else {
+	        		LOG.info("pvova");
+	        	}
 	            if (orderByField != null) {
 	                sql += String.format(" order by %s, %s", filterField, orderByField);
 	            }
@@ -209,6 +214,11 @@ public class JDBCTableReader<T extends Entity> implements TableReader<T> {
 	            LOG.info(preparedStatement.toString());
 	            results = preparedStatement.executeQuery();
 	            hasMoreEntities = results.next();
+                if (!hasMoreEntities) {
+                    // No entities to iterate over so we can close the database connection.
+                    // Closing the connection will also close all result sets and return the connection to the pool.
+                    connection.close();
+                }
             } catch (SQLException sqlEx) {
 	            DbUtils.closeQuietly(connection);
 	            if (SQL_STATE_UNDEFINED_TABLE.equals(sqlEx.getSQLState())) {
@@ -269,6 +279,7 @@ public class JDBCTableReader<T extends Entity> implements TableReader<T> {
                     LOG.error("An iterator connection to table {} is being closed in a finalizer, " +
                             "it should have been closed at the end of iteration.", qualifiedTableName);
                     connection.close();
+                    //dataSource.notifyAll();
                 }
             } catch (SQLException ex) {
                 throw new RuntimeException(ex);
