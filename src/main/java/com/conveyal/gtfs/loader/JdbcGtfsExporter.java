@@ -263,7 +263,7 @@ public class JdbcGtfsExporter {
         zip_properties.put("create", "false");
 
         // Specify the path to the ZIP File that you want to read as a File System
-        URI zip_disk = URI.create("jar:file://" + outFile);
+        URI zip_disk = URI.create("jar:file:/" + outFile.replaceAll("\\\\", "/"));
 
         // Create ZIP file System
         try (FileSystem fileSystem = FileSystems.newFileSystem(zip_disk, zip_properties)) {

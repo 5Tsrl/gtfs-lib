@@ -43,6 +43,7 @@ public class Pattern extends Entity {
     public LineString geometry;
     public String name;
     public String route_id;
+    public int official_length;
     public static Joiner joiner = Joiner.on("-").skipNulls();
     public String feed_id;
 
@@ -93,6 +94,10 @@ public class Pattern extends Entity {
         else{
             name = joiner.join(orderedStops);
         }
+        
+        // add official lenght
+        //
+        this.official_length = exemplarTrip.official_length;
 
         // TODO: Implement segmentIndex using JTS to segment out LineString by stops.
 

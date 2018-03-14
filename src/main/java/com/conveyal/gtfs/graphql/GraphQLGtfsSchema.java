@@ -434,6 +434,7 @@ public class GraphQLGtfsSchema {
             .field(MapFetcher.field("direction_id", GraphQLInt))
             .field(MapFetcher.field("use_frequency", GraphQLInt))
             .field(MapFetcher.field("name"))
+            .field(MapFetcher.field("official_length"))
             .field(newFieldDefinition()
                     .name("shape")
                     .type(new GraphQLList(shapePointType))

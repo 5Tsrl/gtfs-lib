@@ -147,6 +147,7 @@ public interface EntityPopulator<T> {
         trip.direction_id    = getIntIfPresent   (result, "direction_id", columnForName);
         trip.bikes_allowed   = getIntIfPresent   (result, "bikes_allowed", columnForName);
         trip.wheelchair_accessible = getIntIfPresent(result, "wheelchair_accessible", columnForName);
+        trip.official_length = getIntIfPresent(result, "official_length", columnForName);
         return trip;
     };
 

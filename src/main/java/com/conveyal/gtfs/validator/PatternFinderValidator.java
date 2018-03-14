@@ -78,7 +78,7 @@ public class PatternFinderValidator extends TripValidator {
             // AND a varchar pattern_id with essentially the same value cast to a string. Perhaps the pattern ID should
             // be a UUID or something, just to better distinguish it from the int ID?
             statement.execute(String.format("create table %s (id serial, pattern_id varchar primary key, " +
-                    "route_id varchar, name varchar, shape_id varchar)", patternsTableName));
+                    "route_id varchar, name varchar, shape_id varchar, official_length int)", patternsTableName));
             // FIXME: Use patterns table?
 //            Table patternsTable = new Table(patternsTableName, Pattern.class, Requirement.EDITOR, Table.PATTERNS.fields);
             Table patternStopsTable = new Table(patternStopsTableName, PatternStop.class, Requirement.EDITOR,
@@ -89,7 +89,7 @@ public class PatternFinderValidator extends TripValidator {
             PreparedStatement updateTripStatement = connection.prepareStatement(
                     String.format("update %s set pattern_id = ? where trip_id = ?", tripsTableName));
             PreparedStatement insertPatternStatement = connection.prepareStatement(
-                    String.format("insert into %s values (DEFAULT, ?, ?, ?, ?)", patternsTableName));
+                    String.format("insert into %s values (DEFAULT, ?, ?, ?, ?, ?)", patternsTableName));
             PreparedStatement insertPatternStopStatement = connection.prepareStatement(insertPatternStopSql);
             int batchSize = 0;
             LOG.info("Storing patterns and pattern stops");
@@ -104,6 +104,7 @@ public class PatternFinderValidator extends TripValidator {
                 // FIXME: This could be null...
                 String shapeId = pattern.associatedShapes.iterator().next();
                 insertPatternStatement.setString(4, shapeId);
+                insertPatternStatement.setInt(5, pattern.official_length);
                 insertPatternStatement.addBatch();
                 // Construct pattern stops based on values in trip pattern key.
                 // FIXME: Use pattern stops table here?

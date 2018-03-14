@@ -161,7 +161,8 @@ public class Table {
             // Editor-specific fields
             new ShortField("direction_id", EDITOR, 1),
             new ShortField("use_frequency", EDITOR, 1),
-            new StringField("shape_id", EDITOR).isReferenceTo(SHAPES)
+            new StringField("shape_id", EDITOR).isReferenceTo(SHAPES),
+            new IntegerField("official_length", OPTIONAL, Integer.MAX_VALUE)
     ).addPrimaryKey();
 
     public static final Table STOPS = new Table("stops", Stop.class, REQUIRED,
@@ -214,6 +215,7 @@ public class Table {
         new StringField("shape_id",  OPTIONAL).isReferenceTo(SHAPES),
         new ShortField("wheelchair_accessible", OPTIONAL, 2),
         new ShortField("bikes_allowed", OPTIONAL, 2),
+        new IntegerField("official_length", OPTIONAL, Integer.MAX_VALUE),
         // Editor-specific fields below.
         new StringField("pattern_id", EDITOR).isReferenceTo(PATTERNS)
     ).addPrimaryKey();
