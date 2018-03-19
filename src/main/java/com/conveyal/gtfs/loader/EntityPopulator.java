@@ -250,7 +250,11 @@ public interface EntityPopulator<T> {
         int columnIndex = columnForName.get(columnName);
         // FIXME: if SQL value is null, resultSet.getInt will return 0. Should return value equal 0 if column is missing?
         if (columnIndex == 0) return -1;
-        else return resultSet.getDouble(columnIndex);
+        
+        if(resultSet.getObject(columnIndex) != null)
+        	return resultSet.getDouble(columnIndex);
+        else
+        	return -1;        
     }
 
     static int getIntIfPresent (ResultSet resultSet, String columnName,
@@ -258,6 +262,10 @@ public interface EntityPopulator<T> {
         int columnIndex = columnForName.get(columnName);
         // FIXME: if SQL value is null, resultSet.getInt will return 0. Should INT_MISSING do the same?
         if (columnIndex == 0) return Entity.INT_MISSING;
-        else return resultSet.getInt(columnIndex);
+        
+        if(resultSet.getObject(columnIndex) != null)
+        	return resultSet.getInt(columnIndex);
+        else
+        	return Entity.INT_MISSING;        
     }
 }

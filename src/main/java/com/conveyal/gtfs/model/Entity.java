@@ -87,6 +87,12 @@ public abstract class Entity implements Serializable {
         if (value == INT_MISSING) statement.setNull(oneBasedIndex, JDBCType.INTEGER.getVendorTypeNumber());
         else statement.setInt(oneBasedIndex, value);
     }
+    
+    
+    public static void setDoubleParameter (PreparedStatement statement, int oneBasedIndex, double value) throws SQLException {
+        if (value == -1) statement.setNull(oneBasedIndex, JDBCType.DOUBLE.getVendorTypeNumber());
+        else statement.setDouble(oneBasedIndex, value);
+    }
 
     /* A class that can produce Entities from CSV, and record errors that occur in the process. */
     // This is almost a GTFSTable... rename?
