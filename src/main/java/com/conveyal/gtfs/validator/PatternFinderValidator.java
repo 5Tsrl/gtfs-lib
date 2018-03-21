@@ -106,7 +106,7 @@ public class PatternFinderValidator extends TripValidator {
                 // FIXME: This could be null...
                 String shapeId = pattern.associatedShapes.iterator().next();
                 insertPatternStatement.setString(4, shapeId);
-                insertPatternStatement.setInt(5, pattern.official_length);
+                setIntParameter(insertPatternStatement,5, pattern.official_length);
                 insertPatternStatement.addBatch();
                 // Construct pattern stops based on values in trip pattern key.
                 // FIXME: Use pattern stops table here?

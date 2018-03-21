@@ -2,6 +2,7 @@ package com.conveyal.gtfs;
 
 import com.conveyal.gtfs.loader.Feed;
 import com.conveyal.gtfs.loader.FeedLoadResult;
+import com.conveyal.gtfs.loader.JdbcGtfsCleaner;
 import com.conveyal.gtfs.loader.JdbcGtfsExporter;
 import com.conveyal.gtfs.loader.JdbcGtfsLoader;
 import com.conveyal.gtfs.loader.JdbcGtfsSnapshotter;
@@ -58,6 +59,34 @@ public abstract class GTFS {
         FeedLoadResult result = loader.loadTables();
         return result;
     }
+    
+    
+    
+    /**
+     * Erase from DB the specify namespace
+     *
+     * @return a true or false
+     */
+    public static boolean deleteFeedSource(String nameSpace, DataSource dataSource) {
+    	JdbcGtfsCleaner cleaner = new JdbcGtfsCleaner(nameSpace, dataSource);
+    	cleaner.deleteFeedSource();
+        return true;
+    }
+    
+    
+    /**
+     * Erase from DB the specify namespace
+     *
+     * @return a true or false
+     */
+    public static boolean deleteFeedVersion(String nameSpace, DataSource dataSource) {
+    	JdbcGtfsCleaner cleaner = new JdbcGtfsCleaner(nameSpace, dataSource);
+    	cleaner.deleteFeedVersion();
+        return true;
+    }
+    
+       
+    
 
     /**
      * Copy all tables for a given feed ID (schema namespace) into a new namespace in the given JDBC DataSource.

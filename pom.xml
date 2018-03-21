@@ -7,7 +7,7 @@
   <url>https://github.com/conveyal/gtfs-lib</url>
 
   <groupId>com.conveyal</groupId>
-  <artifactId>gtfs-lib</artifactId>
+  <artifactId>gtfs-lib-5t</artifactId>
   <version>3.4.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
