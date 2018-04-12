@@ -164,20 +164,10 @@ public class PatternFinder {
                 intersection.retainAll(info.toStops.get(toName));
 
                 if (intersection.size() == 1) {
-                    pattern.name = String.format(Locale.US, "from %s to %s", fromName, toName);
+                    pattern.name = String.format(Locale.US, "%s >> %s", fromName, toName);
                     continue;
                 }
-
-                // check for unique via stop
-                pattern.orderedStops.stream().map(stopById::get).forEach(stop -> {
-                    Set<Pattern> viaIntersection = new HashSet<>(intersection);
-                    viaIntersection.retainAll(info.vias.get(stop.stop_name));
-
-                    if (viaIntersection.size() == 1) {
-                        pattern.name = String.format(Locale.US, "from %s to %s via %s", fromName, toName, stop.stop_name);
-                    }
-                });
-
+               
                 if (pattern.name == null) {
                     // no unique via, one pattern is subset of other.
                     if (intersection.size() == 2) {
@@ -185,25 +175,37 @@ public class PatternFinder {
                         Pattern p0 = it.next();
                         Pattern p1 = it.next();
                         if (p0.orderedStops.size() > p1.orderedStops.size()) {
-                            p1.name = String.format(Locale.US, "from %s to %s express", fromName, toName);
-                            p0.name = String.format(Locale.US, "from %s to %s local", fromName, toName);
+                            p1.name = String.format(Locale.US, "%s >> %s express", fromName, toName);
+                            p0.name = String.format(Locale.US, "%s >> %s local", fromName, toName);
                         } else if (p1.orderedStops.size() > p0.orderedStops.size()){
-                            p0.name = String.format(Locale.US, "from %s to %s express", fromName, toName);
-                            p1.name = String.format(Locale.US, "from %s to %s local", fromName, toName);
+                            p0.name = String.format(Locale.US, "%s >> %s express", fromName, toName);
+                            p1.name = String.format(Locale.US, "%s >> %s local", fromName, toName);
                         }
                     }
                 }
+                
+                // check for unique via stop
+                for (String stopId : pattern.orderedStops) {
+                	 Set<Pattern> viaIntersection = new HashSet<>(intersection);
+                	 Stop stop = stopById.get(stopId);
+                     viaIntersection.retainAll(info.vias.get(stop.stop_name));
+
+                     if (viaIntersection.size() == 1) {
+                     	if(pattern.name == null)
+                     		pattern.name = String.format(Locale.US, "%s >> %s via %s", fromName, toName, stop.stop_name);
+                     }
+				}
 
                 if (pattern.name == null) {
                     // give up
-                    pattern.name = String.format(Locale.US, "from %s to %s like trip %s", fromName, toName, pattern.associatedTrips.get(0));
+                    pattern.name = String.format(Locale.US, "%s >> %s like trip %s", fromName, toName, pattern.associatedTrips.get(0));
                 }
             }
 
             // attach a stop and trip count to each
             for (Pattern pattern : info.patternsOnRoute) {
-                pattern.name = String.format(Locale.US, "%s stops %s (%s trips)",
-                        pattern.orderedStops.size(), pattern.name, pattern.associatedTrips.size());
+                pattern.name = String.format(Locale.US, "%s (%s trips, %s stops)", 
+                		pattern.name, pattern.associatedTrips.size(), pattern.orderedStops.size());
             }
         }
     }
