@@ -1,5 +1,6 @@
 package com.conveyal.gtfs.graphql;
 
+import com.conveyal.gtfs.graphql.fetchers.CountGroupByFetcher;
 import com.conveyal.gtfs.graphql.fetchers.ErrorCountFetcher;
 import com.conveyal.gtfs.graphql.fetchers.FeedFetcher;
 import com.conveyal.gtfs.graphql.fetchers.JDBCFetcher;
@@ -55,6 +56,8 @@ public class GraphQLGtfsSchema {
 
     // by using static fields to hold these types, backward references are enforced. a few forward references are inserted explicitly.
 
+	
+	
     // Represents rows from agency.txt
     public static final GraphQLObjectType agencyType = newObject().name("agency")
             .description("A GTFS agency object")
@@ -87,6 +90,9 @@ public class GraphQLGtfsSchema {
             .field(MapFetcher.field("end_date"))
             // FIXME: Description is an editor-specific field
             .field(MapFetcher.field("description"))
+            // 5T 
+            .field(RowCountFetcher.field("trip_count", "trips", "service_id"))
+            .field(RowCountFetcher.field("route_count", "trips", "service_id", "route_id"))
             .build();
 
     private static final GraphQLScalarType stringList = new GraphQLScalarType("StringList", "List of Strings", new StringCoercing());
@@ -243,6 +249,19 @@ public class GraphQLGtfsSchema {
             .field(MapFetcher.field("shape_dist_traveled", GraphQLFloat))
             .build();
 
+    
+    /**
+     * GraphQL does not have a type for arbitrary maps (String -> X). Such maps must be expressed as a list of
+     * key-value pairs. This is probably intended to protect us from ourselves (sending untyped data) but it just
+     * leads to silly workarounds like this.
+     */
+    public static GraphQLObjectType counterGroupByType = newObject().name("countGroupBy")
+            .description("group by counter")
+            .field(string("field"))
+            .field(intt("count"))
+            .build();
+    
+    
     // Represents rows from routes.txt
     public static final GraphQLObjectType routeType = newObject().name("route")
             .description("A line from a GTFS routes.txt table")
@@ -299,6 +318,13 @@ public class GraphQLGtfsSchema {
                     .dataFetcher(new JDBCFetcher("patterns", "route_id"))
                     .build()
             )
+            .field(newFieldDefinition()
+                    .name("trip_count_by_calendar")
+                    .type(new GraphQLList(counterGroupByType))
+                    .argument(intArg(LIMIT_ARG))
+                    .argument(stringArg("route_id"))
+                    .dataFetcher(new CountGroupByFetcher("trips", "route_id", "service_id"))
+                    .build())
             .field(RowCountFetcher.field("count", "routes"))
             .build();
 
@@ -420,6 +446,7 @@ public class GraphQLGtfsSchema {
             .field(intt("count"))
             .field(string("message"))
             .build();
+   
 
     /**
      * The GraphQL API type representing a unique sequence of stops on a route. This is used to group trips together.
@@ -483,6 +510,13 @@ public class GraphQLGtfsSchema {
                 .argument(multiStringArg("service_id"))
                 .dataFetcher(new JDBCFetcher("trips", "pattern_id"))
                 .build())
+            .field(newFieldDefinition()
+                    .name("trip_count_by_calendar")
+                    .type(new GraphQLList(counterGroupByType))
+                    .argument(intArg(LIMIT_ARG))
+                    .argument(stringArg("pattern_id"))
+                    .dataFetcher(new CountGroupByFetcher("trips", "pattern_id", "service_id"))
+                    .build())
             .build();
 
     /**
