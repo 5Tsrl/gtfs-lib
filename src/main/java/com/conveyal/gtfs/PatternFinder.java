@@ -1,22 +1,6 @@
 package com.conveyal.gtfs;
 
-import com.conveyal.gtfs.error.NewGTFSError;
-import com.conveyal.gtfs.error.NewGTFSErrorType;
-import com.conveyal.gtfs.error.SQLErrorStorage;
-import com.conveyal.gtfs.model.Pattern;
-import com.conveyal.gtfs.model.PatternStop;
-import com.conveyal.gtfs.model.ShapePoint;
-import com.conveyal.gtfs.model.Stop;
-import com.conveyal.gtfs.model.StopTime;
-import com.conveyal.gtfs.model.Trip;
-import com.conveyal.gtfs.validator.service.GeoUtils;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.CoordinateList;
-import com.vividsolutions.jts.geom.LineString;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.conveyal.gtfs.util.Util.human;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,9 +11,19 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import static com.conveyal.gtfs.util.Util.human;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.conveyal.gtfs.error.NewGTFSError;
+import com.conveyal.gtfs.error.NewGTFSErrorType;
+import com.conveyal.gtfs.error.SQLErrorStorage;
+import com.conveyal.gtfs.model.Pattern;
+import com.conveyal.gtfs.model.Stop;
+import com.conveyal.gtfs.model.StopTime;
+import com.conveyal.gtfs.model.Trip;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 
 /**
  * This abstracts out the logic for finding stop sequences ("journey patterns" in Transmodel parlance) based on trips.
@@ -204,8 +198,12 @@ public class PatternFinder {
 
             // attach a stop and trip count to each
             for (Pattern pattern : info.patternsOnRoute) {
-                pattern.name = String.format(Locale.US, "%s (%s trips, %s stops)", 
-                		pattern.name, pattern.associatedTrips.size(), pattern.orderedStops.size());
+                pattern.name = String.format(Locale.US, "%s", pattern.name);
+                
+                // --> remove trips and stops count from pattern name 
+                //pattern.name = String.format(Locale.US, "%s (%s trips, %s stops)", 
+                //		pattern.name, pattern.associatedTrips.size(), pattern.orderedStops.size());
+
             }
         }
     }
