@@ -22,6 +22,9 @@ public class Trip extends Entity {
     public int    wheelchair_accessible;
     public int    official_length;
     public String feed_id;
+    public int contribuited;
+    
+    
 
     @Override
     public String getId() {
@@ -47,6 +50,7 @@ public class Trip extends Entity {
         setIntParameter(statement, oneBasedIndex++, wheelchair_accessible);
         setIntParameter(statement, oneBasedIndex++, bikes_allowed);
         setIntParameter(statement, oneBasedIndex++, official_length);
+        setIntParameter(statement, oneBasedIndex++, contribuited);
         
         // Editor-specific field? pattern_id
         statement.setString(oneBasedIndex++, null);
@@ -79,6 +83,7 @@ public class Trip extends Entity {
             t.bikes_allowed   = getIntField("bikes_allowed", false, 0, 2);
             t.wheelchair_accessible = getIntField("wheelchair_accessible", false, 0, 2);
             t.official_length = getIntField("official_length", false, 0, Integer.MAX_VALUE);
+            t.contribuited = getIntField("contribuited", false, 0, 1);
             t.feed = feed;
             t.feed_id = feed.feedId;
             feed.trips.put(t.trip_id, t);
@@ -103,7 +108,7 @@ public class Trip extends Entity {
         protected void writeHeaders() throws IOException {
             // TODO: export shapes
             writer.writeRecord(new String[] {"route_id", "trip_id", "trip_headsign", "trip_short_name", "direction_id", "block_id",
-                    "shape_id", "bikes_allowed", "wheelchair_accessible", "service_id", "official_length"});
+                    "shape_id", "bikes_allowed", "wheelchair_accessible", "service_id", "official_length", "contribuited"});
         }
 
         @Override
@@ -119,6 +124,8 @@ public class Trip extends Entity {
             writeIntField(t.wheelchair_accessible);
             writeStringField(t.service_id);
             writeIntField(t.official_length);
+            writeIntField(t.contribuited);
+            
             endRecord();
         }
 
