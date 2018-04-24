@@ -73,6 +73,15 @@ public class GraphQLGtfsSchema {
             .field(MapFetcher.field("agency_fare_url"))
             .field(MapFetcher.field("agency_timezone"))
             .build();
+    
+ // Represents GTFS Editor service exceptions.
+    public static final GraphQLObjectType calendarDatesType = newObject().name("calendarDates")
+            .description("A GTFS calendar dates object")
+            .field(MapFetcher.field("id", GraphQLInt))
+            .field(MapFetcher.field("service_id", GraphQLString))
+            .field(MapFetcher.field("date", GraphQLString))
+            .field(MapFetcher.field("exception_type", GraphQLInt))
+            .build();
 
     // Represents rows from calendar.txt
     public static final GraphQLObjectType calendarType = newObject()
@@ -93,6 +102,13 @@ public class GraphQLGtfsSchema {
             // 5T 
             .field(RowCountFetcher.field("trip_count", "trips", "service_id"))
             .field(RowCountFetcher.field("route_count", "trips", "service_id", "route_id"))
+            .field(newFieldDefinition()
+                    .name("calendar_dates")
+                    // forward reference to the as yet undefined stopTimeType (must be defined after tripType)
+                    .type(new GraphQLList(calendarDatesType))            
+                    .argument(intArg(LIMIT_ARG))
+                    .dataFetcher(new JDBCFetcher("calendar_dates", "service_id", "date"))
+                    .build())
             .build();
 
     private static final GraphQLScalarType stringList = new GraphQLScalarType("StringList", "List of Strings", new StringCoercing());
