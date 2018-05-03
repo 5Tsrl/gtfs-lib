@@ -86,16 +86,17 @@ public class Table {
             // FIXME: Change to DateListField
             new DateListField("dates", REQUIRED),
             new ShortField("exemplar", REQUIRED, 9),
-            new StringListField("custom_schedule", OPTIONAL).isReferenceTo(CALENDAR),
-            new StringListField("added_service", OPTIONAL).isReferenceTo(CALENDAR),
-            new StringListField("removed_service", OPTIONAL).isReferenceTo(CALENDAR)
+            new StringListField("custom_schedule", OPTIONAL),//5t .isReferenceTo(CALENDAR),
+            new StringListField("added_service", OPTIONAL),//5t .isReferenceTo(CALENDAR),
+            new StringListField("removed_service", OPTIONAL)//5t .isReferenceTo(CALENDAR)
     );
 
     public static final Table CALENDAR_DATES = new Table("calendar_dates", CalendarDate.class, OPTIONAL,
-        new StringField("service_id", REQUIRED),
+        new StringField("service_id", REQUIRED).isReferenceTo(CALENDAR),//5t added isReferenceTo
         new DateField("date", REQUIRED),
         new IntegerField("exception_type", REQUIRED, 1, 2)
-    ).keyFieldIsNotUnique();
+    ).keyFieldIsNotUnique()
+    .withParentTable(CALENDAR);
 
     public static final Table FARE_ATTRIBUTES = new Table("fare_attributes", FareAttribute.class, OPTIONAL,
         new StringField("fare_id", REQUIRED),

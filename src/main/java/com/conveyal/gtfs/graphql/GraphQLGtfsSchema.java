@@ -104,7 +104,6 @@ public class GraphQLGtfsSchema {
             .field(RowCountFetcher.field("route_count", "trips", "service_id", "route_id"))
             .field(newFieldDefinition()
                     .name("calendar_dates")
-                    // forward reference to the as yet undefined stopTimeType (must be defined after tripType)
                     .type(new GraphQLList(calendarDatesType))            
                     .argument(intArg(LIMIT_ARG))
                     .dataFetcher(new JDBCFetcher("calendar_dates", "service_id", "date"))
