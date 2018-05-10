@@ -196,7 +196,7 @@ public class GraphQLGtfsSchema {
             .field(MapFetcher.field("id", GraphQLInt))
             .field(MapFetcher.field("trip_id"))
             .field(MapFetcher.field("trip_headsign"))
-            .field(MapFetcher.field("contribuited"))
+            .field(MapFetcher.field("contributed"))
             .field(MapFetcher.field("trip_short_name"))
             .field(MapFetcher.field("block_id"))
             .field(MapFetcher.field("direction_id", GraphQLInt))

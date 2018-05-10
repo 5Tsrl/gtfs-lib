@@ -219,6 +219,7 @@ public class Table {
         new StringField("shape_id",  OPTIONAL).isReferenceTo(SHAPES),
         new ShortField("wheelchair_accessible", OPTIONAL, 2),
         new ShortField("bikes_allowed", OPTIONAL, 2),
+        new ShortField("contributed", EDITOR, 1),
         new IntegerField("official_length", OPTIONAL, Integer.MAX_VALUE),
         // Editor-specific fields below.
         new StringField("pattern_id", EDITOR).isReferenceTo(PATTERNS)
