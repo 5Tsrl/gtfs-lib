@@ -4,6 +4,7 @@ import com.conveyal.gtfs.model.Agency;
 import com.conveyal.gtfs.model.Calendar;
 import com.conveyal.gtfs.model.CalendarDate;
 import com.conveyal.gtfs.model.Entity;
+import com.conveyal.gtfs.model.PatternStop;
 import com.conveyal.gtfs.model.Route;
 import com.conveyal.gtfs.model.ScheduleException;
 import com.conveyal.gtfs.model.ScheduleException.ExemplarServiceDescriptor;
@@ -52,6 +53,19 @@ import static com.conveyal.gtfs.model.ScheduleException.exemplarFromInt;
  */
 public interface EntityPopulator<T> {
     Logger LOG = LoggerFactory.getLogger(EntityPopulator.class);
+    EntityPopulator<PatternStop> PATTERN_STOP = (result, columnForName) -> {
+        PatternStop patternStop = new PatternStop();
+        patternStop.stop_id = getStringIfPresent(result, "stop_id", columnForName);
+        patternStop.default_dwell_time = getIntIfPresent(result, "default_dwell_time", columnForName);
+        patternStop.default_travel_time = getIntIfPresent(result, "default_travel_time", columnForName);
+        patternStop.pattern_id = getStringIfPresent(result, "pattern_id", columnForName);
+        patternStop.drop_off_type = getIntIfPresent(result, "drop_off_type", columnForName);
+        patternStop.pickup_type = getIntIfPresent(result, "pickup_type", columnForName);
+        patternStop.stop_sequence = getIntIfPresent(result, "stop_sequence", columnForName);
+        patternStop.timepoint = getIntIfPresent(result, "timepoint", columnForName);
+        patternStop.shape_dist_traveled = getDoubleIfPresent(result, "shape_dist_traveled", columnForName);
+        return patternStop;
+    };
 
     T populate (ResultSet results, TObjectIntMap<String> columnForName) throws SQLException;
 
@@ -97,9 +111,9 @@ public interface EntityPopulator<T> {
         scheduleException.name              = getStringIfPresent(result, "name", columnForName);
         scheduleException.dates             = getDateListIfPresent(result, "dates", columnForName);
         scheduleException.exemplar          = exemplarFromInt(getIntIfPresent(result, "exemplar", columnForName));
-        scheduleException.customSchedule    = getStringListIfPresent(result, "customSchedule", columnForName);
-        scheduleException.addedService      = getStringListIfPresent(result, "addedService", columnForName);
-        scheduleException.removedService    = getStringListIfPresent(result, "removedService", columnForName);
+        scheduleException.customSchedule    = getStringListIfPresent(result, "custom_schedule", columnForName);
+        scheduleException.addedService      = getStringListIfPresent(result, "added_service", columnForName);
+        scheduleException.removedService    = getStringListIfPresent(result, "removed_service", columnForName);
         return scheduleException;
     };
 
@@ -212,7 +226,8 @@ public interface EntityPopulator<T> {
         int columnIndex = columnForName.get(columnName);
         if (columnIndex == 0) return new ArrayList<>();
         try {
-            return Arrays.asList((String[])resultSet.getArray(columnIndex).getArray());
+            List<String> strings = Arrays.asList((String[]) resultSet.getArray(columnIndex).getArray());
+            return strings;
 
         } catch (Exception e) {
             return new ArrayList<>();
@@ -249,12 +264,8 @@ public interface EntityPopulator<T> {
                                              TObjectIntMap<String> columnForName) throws SQLException {
         int columnIndex = columnForName.get(columnName);
         // FIXME: if SQL value is null, resultSet.getInt will return 0. Should return value equal 0 if column is missing?
-        if (columnIndex == 0) return -1;
-        
-        if(resultSet.getObject(columnIndex) != null)
-        	return resultSet.getDouble(columnIndex);
-        else
-        	return -1;        
+        if (columnIndex == 0) return Entity.DOUBLE_MISSING;
+        else return resultSet.getDouble(columnIndex);
     }
 
     static int getIntIfPresent (ResultSet resultSet, String columnName,
