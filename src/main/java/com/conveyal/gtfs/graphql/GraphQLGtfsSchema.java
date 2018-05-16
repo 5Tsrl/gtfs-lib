@@ -106,7 +106,7 @@ public class GraphQLGtfsSchema {
                     .name("calendar_dates")
                     .type(new GraphQLList(calendarDatesType))            
                     .argument(intArg(LIMIT_ARG))
-                    .dataFetcher(new JDBCFetcher("calendar_dates", "service_id", "date"))
+                    .dataFetcher(new JDBCFetcher("calendar_dates", "service_id", "date", false))
                     .build())
             .build();
 

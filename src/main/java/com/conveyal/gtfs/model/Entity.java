@@ -89,12 +89,6 @@ public abstract class Entity implements Serializable {
         else statement.setInt(oneBasedIndex, value);
     }
     
-    
-    public static void setDoubleParameter (PreparedStatement statement, int oneBasedIndex, double value) throws SQLException {
-        if (value == -1) statement.setNull(oneBasedIndex, JDBCType.DOUBLE.getVendorTypeNumber());
-        else statement.setDouble(oneBasedIndex, value);
-    }
-
     public static void setDoubleParameter (PreparedStatement statement, int oneBasedIndex, double value) throws SQLException {
         if (value == DOUBLE_MISSING) statement.setNull(oneBasedIndex, JDBCType.DOUBLE.getVendorTypeNumber());
         else statement.setDouble(oneBasedIndex, value);
