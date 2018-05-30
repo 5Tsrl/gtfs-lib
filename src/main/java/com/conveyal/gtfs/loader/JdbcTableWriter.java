@@ -162,7 +162,7 @@ public class JdbcTableWriter implements TableWriter {
             if ("routes".equals(specTable.name)) {
                 updateLinkedFields(specTable, jsonObject, "trips", "route_id", "wheelchair_accessible");
             } else if ("patterns".equals(specTable.name)) {
-                updateLinkedFields(specTable, jsonObject, "trips", "pattern_id", "direction_id");
+                updateLinkedFields(specTable, jsonObject, "trips", "pattern_id", "direction_id", "official_length");
             }
             if (autoCommit) {
                 // If nothing failed up to this point, it is safe to assume there were no problems updating/creating the
