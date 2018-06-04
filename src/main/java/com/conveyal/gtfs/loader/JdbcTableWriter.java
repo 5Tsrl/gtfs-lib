@@ -437,7 +437,7 @@ public class JdbcTableWriter implements TableWriter {
                 // check the values here as a sanity check.
                 int orderValue = subEntity.get(orderFieldName).asInt();
                 boolean orderIsUnique = orderValues.add(orderValue);
-                boolean valuesAreIncrementing = ++previousOrder == orderValue;
+                boolean valuesAreIncrementing = previousOrder < orderValue;
                 if (!orderIsUnique || !valuesAreIncrementing) {
                     throw new SQLException(String.format(
                             "%s %s values must be zero-based, unique, and incrementing. Entity at index %d had %s value of %d",
@@ -448,7 +448,10 @@ public class JdbcTableWriter implements TableWriter {
                             orderValue)
                     );
                 }
+                
+                previousOrder = orderValue;
             }
+            
             // Log statement on first iteration so that it is not logged for each item in the batch.
             if (entityCount == 0) LOG.info(insertStatement.toString());
             insertStatement.addBatch();
