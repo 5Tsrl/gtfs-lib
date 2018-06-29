@@ -310,12 +310,12 @@ public class JDBCFetcher implements DataFetcher<List<Map<String, Object>>> {
         sqlBuilder.append(sortBy);
         Integer limit = (Integer) arguments.get(LIMIT_ARG);
         if (limit == null) {
-            limit = DEFAULT_ROWS_TO_FETCH;
+            limit = autoLimit ? DEFAULT_ROWS_TO_FETCH : -1;
         }
         if (limit > MAX_ROWS_TO_FETCH) {
             limit = MAX_ROWS_TO_FETCH;
         }
-        if (limit == -1 || !autoLimit) {
+        if (limit == -1) {
             // Do not append limit if explicitly set to -1 or autoLimit is disabled. NOTE: this conditional block is
             // empty simply because it is clearer to define the condition in this way (vs. if limit > 0).
             // FIXME: Skipping limit is not scalable in many cases and should possibly be removed/limited.
@@ -435,20 +435,26 @@ public class JDBCFetcher implements DataFetcher<List<Map<String, Object>>> {
     }
 
     /**
+     * Construct filter clause with '=' (single string) and add values to list of parameters.
+     * */
+    static String makeInClause(String filterField, String string, List<String> parameters) {
+        // Add string to list of parameters (to be later used to set parameters for prepared statement).
+        parameters.add(string);
+        return String.format("%s = ?", filterField);
+    }
+
+    /**
      * Construct filter clause with '=' (single string) or 'in' (multiple strings) and add values to list of parameters.
      * */
-    private String makeInClause(String key, List<String> strings, List<String> parameters) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(key);
+    static String makeInClause(String filterField, List<String> strings, List<String> parameters) {
         if (strings.size() == 1) {
-            sb.append(" = ?");
+            return makeInClause(filterField, strings.get(0), parameters);
         } else {
+            // Add strings to list of parameters (to be later used to set parameters for prepared statement).
+            parameters.addAll(strings);
             String questionMarks = String.join(", ", Collections.nCopies(strings.size(), "?"));
-            sb.append(String.format(" in (%s)", questionMarks));
+            return String.format("%s in (%s)", filterField, questionMarks);
         }
-        // Add strings to list of parameters (to be later used to set parameters for prepared statement).
-        parameters.addAll(strings);
-        return sb.toString();
     }
 
 }
