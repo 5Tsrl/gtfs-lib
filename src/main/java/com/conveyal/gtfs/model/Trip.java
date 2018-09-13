@@ -23,8 +23,6 @@ public class Trip extends Entity {
     public int    official_length;
     public String feed_id;
     public int contributed;
-    
-    
 
     @Override
     public String getId() {
@@ -51,7 +49,7 @@ public class Trip extends Entity {
         setIntParameter(statement, oneBasedIndex++, bikes_allowed);
         setIntParameter(statement, oneBasedIndex++, official_length);
         setIntParameter(statement, oneBasedIndex++, contributed);
-        
+
         // Editor-specific field? pattern_id
         statement.setString(oneBasedIndex++, null);
     }
@@ -125,7 +123,7 @@ public class Trip extends Entity {
             writeStringField(t.service_id);
             writeIntField(t.official_length);
             writeIntField(t.contributed);
-            
+
             endRecord();
         }
 

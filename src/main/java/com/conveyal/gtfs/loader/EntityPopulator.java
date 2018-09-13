@@ -268,16 +268,9 @@ public interface EntityPopulator<T> {
                                        TObjectIntMap<String> columnForName) throws SQLException {
         int columnIndex = columnForName.get(columnName);
         if (columnIndex == 0) return Entity.INT_MISSING;
-       
-// --> this is our modification replace by the below code         
-//        if(resultSet.getObject(columnIndex) != null)
-//        	return resultSet.getInt(columnIndex);
-//        else
-//        	return Entity.INT_MISSING;
-        
         int intValue = resultSet.getInt(columnIndex);
         // If SQL value for column was null, resultSet.getInt will return 0. If this is the case, override value with
-        // INT_MISSING.        
+        // INT_MISSING.
         if (resultSet.wasNull()) return Entity.INT_MISSING;
         else return intValue;
     }

@@ -94,9 +94,7 @@ public class Pattern extends Entity {
         else{
             name = joiner.join(orderedStops);
         }
-        
         // add official lenght
-        //
         this.official_length = exemplarTrip.official_length;
 
         // TODO: Implement segmentIndex using JTS to segment out LineString by stops.

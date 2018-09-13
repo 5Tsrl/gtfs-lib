@@ -40,7 +40,7 @@ public class CountGroupByFetcher implements DataFetcher {
     public CountGroupByFetcher(String tableName, String filterField, String grouByField) {
         this.tableName = tableName;
         this.filterField = filterField;
-        this.grouByField = grouByField;        
+        this.grouByField = grouByField;
     }
 
     @Override
@@ -58,21 +58,20 @@ public class CountGroupByFetcher implements DataFetcher {
                 String filterValue = (String) parentFeedMap.get(filterField);
                 sql += String.format(" where %s = '%s'", filterField, filterValue);
             }
-            
+
             sql += String.format(" group by %s ", grouByField);
             LOG.info(sql);
-            
+
             if (statement.execute(sql)) {
-            	
+
                 ResultSet resultSet = statement.getResultSet();
                 while (resultSet.next()) {
                 	 String field = resultSet.getString(1);
-                     Integer count = resultSet.getInt(2);                    
+                     Integer count = resultSet.getInt(2);
                      resultList.add(new GroupByCount(field, count));
                 }
-            }           
-                 
-           
+            }
+
         } catch (SQLException e) {
             // In case the table doesn't exist in this feed, just return zero and don't print noise to the log.
             // Unfortunately JDBC doesn't seem to define reliable error codes.
@@ -107,7 +106,7 @@ public class CountGroupByFetcher implements DataFetcher {
         return newFieldDefinition()
                 .name(fieldName)
                 .type(Scalars.GraphQLInt)
-                .dataFetcher(new CountGroupByFetcher(tableName, filterField, grouByField))                
+                .dataFetcher(new CountGroupByFetcher(tableName, filterField, grouByField))
                 .build();
     }
 
@@ -117,8 +116,7 @@ public class CountGroupByFetcher implements DataFetcher {
     public static GraphQLFieldDefinition field (String tableName) {
         return field(tableName, tableName);
     }
-    
-    
+
     public static class GroupByCount {
         public String field;
         public int count;

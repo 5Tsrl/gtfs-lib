@@ -42,7 +42,6 @@ import static com.conveyal.gtfs.model.Entity.setDoubleParameter;
 import static com.conveyal.gtfs.model.Entity.setIntParameter;
 import static com.conveyal.gtfs.model.Entity.setDoubleParameter;
 
-
 /**
  * Groups trips together into "patterns" that share the same sequence of stops.
  * This is not a normal validator in the sense that it does not check for bad data.
@@ -254,4 +253,3 @@ public class PatternFinderValidator extends TripValidator {
     }
 
 }
-

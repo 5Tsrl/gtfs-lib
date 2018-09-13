@@ -88,7 +88,7 @@ public abstract class Entity implements Serializable {
         if (value == INT_MISSING) statement.setNull(oneBasedIndex, JDBCType.INTEGER.getVendorTypeNumber());
         else statement.setInt(oneBasedIndex, value);
     }
-    
+
     public static void setDoubleParameter (PreparedStatement statement, int oneBasedIndex, double value) throws SQLException {
         if (value == DOUBLE_MISSING) statement.setNull(oneBasedIndex, JDBCType.DOUBLE.getVendorTypeNumber());
         else statement.setDouble(oneBasedIndex, value);
@@ -179,7 +179,7 @@ public abstract class Entity implements Serializable {
         protected int getTimeField(String column, boolean required) throws IOException {
             String str = getFieldCheckRequired(column, required);
             int val = INT_MISSING;
-            
+
             if (str != null) {
                 String[] fields = str.split(":");
                 if (fields.length != 3) {
@@ -198,7 +198,7 @@ public abstract class Entity implements Serializable {
                     }
                 }
             }
-            
+
             return val;
         }
 
@@ -346,13 +346,13 @@ public abstract class Entity implements Serializable {
     /**
      * Write this entity to a CSV file. This should be subclassed in subclasses of Entity.
      * The following (abstract) methods should be overridden in a subclass:
-     * 
+     *
      * writeHeaders(): write the headers to the CsvWriter writer.
      * writeRow(E): write the passed-in object to the CsvWriter writer, potentially using the write*Field methods.
      * iterator(): return an iterator over objects of this class (note that the feed is available at this.feed
      * public Writer (GTFSFeed feed): this should super to Writer(GTFSFeed feed, String tableName), with the table name
-     * defined. 
-     * 
+     * defined.
+     *
      * @author mattwigway
      */
     public static abstract class Writer<E extends Entity> {
@@ -401,7 +401,7 @@ public abstract class Entity implements Serializable {
             this.writeHeaders();
 
             // write rows until there are none left.
-            row = 0;        	
+            row = 0;
             Iterator<E> iter = this.iterator();
             while (iter.hasNext()) {
                 if (++row % 500000 == 0) {
@@ -441,7 +441,7 @@ public abstract class Entity implements Serializable {
                 writeStringField("");
                 return;
             }
-            
+
             writeStringField(convertToGtfsTime(secsSinceMidnight));
         }
 
@@ -471,7 +471,7 @@ public abstract class Entity implements Serializable {
             // NaN's represent missing values
             if (Double.isNaN(val))
                 writeStringField("");
-            
+
             // control file size: don't use unnecessary precision
             // This is usually used for coordinates; one ten-millionth of a degree at the equator is 1.1cm,
             // and smaller elsewhere on earth, plenty precise enough.

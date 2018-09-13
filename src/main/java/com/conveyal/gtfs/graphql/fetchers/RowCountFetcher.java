@@ -55,7 +55,7 @@ public class RowCountFetcher implements DataFetcher {
         this.groupByField = groupByField;
         this.distinctCounterField = null;
     }
-    
+
     public RowCountFetcher(String tableName, String filterField, String groupByField, String distinctCounterField) {
         this.tableName = tableName;
         this.filterField = filterField;
@@ -168,11 +168,10 @@ public class RowCountFetcher implements DataFetcher {
         return newFieldDefinition()
                 .name(fieldName)
                 .type(GraphQLInt)
-                .dataFetcher(new RowCountFetcher(tableName, filterField))                
+                .dataFetcher(new RowCountFetcher(tableName, filterField))
                 .build();
     }
-    
-    
+
     /**
      * Convenience method to create a field in a GraphQL schema that fetches the number of rows in a table with a filter
      * or where clause. If a filter field is provided, count only the rows that match the parent entity's value for the
@@ -183,7 +182,7 @@ public class RowCountFetcher implements DataFetcher {
         return newFieldDefinition()
                 .name(fieldName)
                 .type(GraphQLInt)
-                .dataFetcher(new RowCountFetcher(tableName, filterField, distinctCounterField))                
+                .dataFetcher(new RowCountFetcher(tableName, filterField, distinctCounterField))
                 .build();
     }
 

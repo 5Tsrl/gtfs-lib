@@ -281,10 +281,10 @@ public class JdbcGtfsExporter {
         // We want to read an existing ZIP File, so we set this to False
         zip_properties.put("create", "false");
 
-       // Specify the path to the ZIP File that you want to read as a File System
-       // URI zip_disk = URI.create("jar:file:" + outFile);
+        // Specify the path to the ZIP File that you want to read as a File System
+        // URI zip_disk = URI.create("jar:file:" + outFile);
         URI zip_disk = URI.create("jar:"+Paths.get(outFile).toUri());
-        
+
         // Create ZIP file System
         try (FileSystem fileSystem = FileSystems.newFileSystem(zip_disk, zip_properties)) {
             // Get the Path inside ZIP File to delete the ZIP Entry
