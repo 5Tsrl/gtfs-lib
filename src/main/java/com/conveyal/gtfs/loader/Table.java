@@ -229,10 +229,13 @@ public class Table {
         new StringField("shape_id",  OPTIONAL).isReferenceTo(SHAPES),
         new ShortField("wheelchair_accessible", OPTIONAL, 2),
         new ShortField("bikes_allowed", OPTIONAL, 2),
-        new ShortField("contributed", EDITOR, 1),
-        new IntegerField("official_length", OPTIONAL, Integer.MAX_VALUE),
         // Editor-specific fields below.
-        new StringField("pattern_id", EDITOR).isReferenceTo(PATTERNS)
+        new StringField("pattern_id", EDITOR).isReferenceTo(PATTERNS),
+        new IntegerField("official_length", EDITOR, Integer.MAX_VALUE),
+        new ShortField("contributed", EDITOR, 1),
+        new DateField("start_date", EDITOR),
+        new DateField("end_date", EDITOR)
+
     ).addPrimaryKey();
 
     // Must come after TRIPS and STOPS table to which it has references
