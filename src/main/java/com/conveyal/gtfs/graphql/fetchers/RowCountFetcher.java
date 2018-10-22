@@ -39,7 +39,7 @@ public class RowCountFetcher implements DataFetcher {
     // Filter field is optionally dynamic if an entity ID argument is provided for the groupByField.
     private final String filterField;
     private final String groupByField;
-    private final String distinctCounterField;
+    private final String distinctCounterField; //5t
 
     public RowCountFetcher(String tableName) {
         this(tableName, null, null);
@@ -53,7 +53,7 @@ public class RowCountFetcher implements DataFetcher {
         this.tableName = tableName;
         this.filterField = filterField;
         this.groupByField = groupByField;
-        this.distinctCounterField = null;
+        this.distinctCounterField = null; //5t
     }
 
     public RowCountFetcher(String tableName, String filterField, String groupByField, String distinctCounterField) {

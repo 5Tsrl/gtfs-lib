@@ -66,9 +66,9 @@ public class CountGroupByFetcher implements DataFetcher {
 
                 ResultSet resultSet = statement.getResultSet();
                 while (resultSet.next()) {
-                	 String field = resultSet.getString(1);
-                     Integer count = resultSet.getInt(2);
-                     resultList.add(new GroupByCount(field, count));
+                  String field = resultSet.getString(1);
+                  Integer count = resultSet.getInt(2);
+                  resultList.add(new GroupByCount(field, count));
                 }
             }
 

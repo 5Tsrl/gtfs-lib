@@ -219,7 +219,7 @@ public class PatternFinder {
             // attach a stop and trip count to each
             /*for (Pattern pattern : info.patternsOnRoute) {
                 pattern.name = String.format(Locale.US, "%s (%s trips, %s stops)",
-                		pattern.name, pattern.associatedTrips.size(), pattern.orderedStops.size());
+                  pattern.name, pattern.associatedTrips.size(), pattern.orderedStops.size());
             }*/
         }
     }

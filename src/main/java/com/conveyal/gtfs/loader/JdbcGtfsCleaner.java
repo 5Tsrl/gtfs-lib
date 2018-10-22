@@ -31,7 +31,7 @@ public class JdbcGtfsCleaner {
 		this.dataSource = dataSource;
 	}
 
-	
+
 	public void deleteFeedVersion() {
 
 		if(this.nameSpace == null) {
@@ -42,7 +42,7 @@ public class JdbcGtfsCleaner {
 			connection = dataSource.getConnection();
 
 			Map<String, Object> feeds = getFeed(this.nameSpace);
-			String filePath = (String)feeds.get("filename"); 
+			String filePath = (String)feeds.get("filename");
 
 			if(filePath != null) {
 				deleteFile(filePath);
@@ -64,7 +64,7 @@ public class JdbcGtfsCleaner {
 		}
 	}
 
-	
+
 	public void deleteFeedSource() {
 
 		if(this.nameSpace == null) {
@@ -75,7 +75,7 @@ public class JdbcGtfsCleaner {
 			connection = dataSource.getConnection();
 
 			Map<String, Object> feeds = getFeed(this.nameSpace);
-			String filePath = (String)feeds.get("filename"); 
+			String filePath = (String)feeds.get("filename");
 
 			if(filePath != null) {
 				deleteFile(filePath);
@@ -86,15 +86,15 @@ public class JdbcGtfsCleaner {
 
 //			String snapshotOf = (String)feeds.get("snapshot_of");
 //			if(snapshotOf != null) {
-//				
+//
 //				Map<String, Object> feedSnapShot = getFeed(snapshotOf);
-//				String filePathSnapShot = (String)feedSnapShot.get("filename"); 
+//				String filePathSnapShot = (String)feedSnapShot.get("filename");
 //				if(filePathSnapShot != null) {
 //					deleteFile(filePathSnapShot);
 //				}
-//				
+//
 //				deleteFromFeedTable(snapshotOf);
-//				deleteNameSpace(snapshotOf);			
+//				deleteNameSpace(snapshotOf);
 //			}
 
 			connection.commit();
@@ -120,7 +120,7 @@ public class JdbcGtfsCleaner {
 			if(f.exists()) {
 				f.delete();
 			}
-		} 
+		}
 		catch (Exception e) {
 			LOG.warn("Exception while deleting file: " +path);
 		}
@@ -147,7 +147,7 @@ public class JdbcGtfsCleaner {
 		}
 
 		return resultMap;
-	} 
+	}
 
 
 	private void deleteFromFeedTable(String nameSpace) throws Exception  {
@@ -166,7 +166,7 @@ public class JdbcGtfsCleaner {
 		StringBuilder sqlBuilder = new StringBuilder();
 		sqlBuilder.append(String.format("drop schema if exists %s cascade", nameSpace));
 
-		statement.execute(sqlBuilder.toString());	    	
+		statement.execute(sqlBuilder.toString());
 	}
 
 

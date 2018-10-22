@@ -72,9 +72,9 @@ public class GraphQLGtfsSchema {
             .field(MapFetcher.field("agency_timezone"))
             .build();
 
- // Represents GTFS Editor service exceptions.
+ // Represents rows from calendar_dates.txt
     public static final GraphQLObjectType calendarDatesType = newObject().name("calendarDates")
-            .description("A GTFS calendar dates object")
+            .description("A GTFS calendar_date object")
             .field(MapFetcher.field("id", GraphQLInt))
             .field(MapFetcher.field("service_id", GraphQLString))
             .field(MapFetcher.field("date", GraphQLString))
@@ -98,8 +98,8 @@ public class GraphQLGtfsSchema {
             // FIXME: Description is an editor-specific field
             .field(MapFetcher.field("description"))
             // 5T
-            .field(RowCountFetcher.field("trip_count", "trips", "service_id"))
-            .field(RowCountFetcher.field("route_count", "trips", "service_id", "route_id"))
+            // .field(RowCountFetcher.field("trip_count", "trips", "service_id"))
+            // .field(RowCountFetcher.field("route_count", "trips", "service_id", "route_id"))
             .field(newFieldDefinition()
                     .name("calendar_dates")
                     .type(new GraphQLList(calendarDatesType))
@@ -273,11 +273,7 @@ public class GraphQLGtfsSchema {
             .field(MapFetcher.field("shape_dist_traveled", GraphQLFloat))
             .build();
 
-    /**
-     * GraphQL does not have a type for arbitrary maps (String -> X). Such maps must be expressed as a list of
-     * key-value pairs. This is probably intended to protect us from ourselves (sending untyped data) but it just
-     * leads to silly workarounds like this.
-     */
+    // 5T serve ancora?
     public static GraphQLObjectType counterGroupByType = newObject().name("countGroupBy")
             .description("group by counter")
             .field(string("field"))
@@ -345,13 +341,13 @@ public class GraphQLGtfsSchema {
                     .dataFetcher(new JDBCFetcher("patterns", "route_id"))
                     .build()
             )
-            .field(newFieldDefinition()
-                    .name("trip_count_by_calendar")
-                    .type(new GraphQLList(counterGroupByType))
-                    .argument(intArg(LIMIT_ARG))
-                    .argument(stringArg("route_id"))
-                    .dataFetcher(new CountGroupByFetcher("trips", "route_id", "service_id"))
-                    .build())
+            //5t aggiunto e tolto .field(newFieldDefinition()
+            //         .name("trip_count_by_calendar")
+            //         .type(new GraphQLList(counterGroupByType))
+            //         .argument(intArg(LIMIT_ARG))
+            //         .argument(stringArg("route_id"))
+            //         .dataFetcher(new CountGroupByFetcher("trips", "route_id", "service_id"))
+            //         .build())
             .field(RowCountFetcher.field("count", "routes"))
             .build();
 

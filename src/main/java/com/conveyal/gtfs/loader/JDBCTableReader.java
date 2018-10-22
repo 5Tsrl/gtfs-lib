@@ -1,7 +1,6 @@
 package com.conveyal.gtfs.loader;
 
 import com.conveyal.gtfs.model.Entity;
-import com.conveyal.gtfs.model.Trip;
 import com.conveyal.gtfs.storage.StorageException;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
@@ -223,9 +222,8 @@ public class JDBCTableReader<T extends Entity> implements TableReader<T> {
          */
         @Override
         public T next() {
-            try {           	
+            try {
                 T entity = entityPopulator.populate(results, columnForName);
-                               
                 // Set the line number on every entity the same way
                 // rather than repeating this statement in each implementation class.
                 entity.id = EntityPopulator.getIntIfPresent(results, "id", columnForName);

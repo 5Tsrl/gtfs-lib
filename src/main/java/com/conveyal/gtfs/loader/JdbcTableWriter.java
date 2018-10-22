@@ -174,6 +174,7 @@ public class JdbcTableWriter implements TableWriter {
             if ("routes".equals(specTable.name)) {
                 updateLinkedFields(specTable, jsonObject, "trips", "route_id", "wheelchair_accessible");
             } else if ("patterns".equals(specTable.name)) {
+                //5t se cambia qs a livello di pattern, devo aggiornare trips
                 updateLinkedFields(specTable, jsonObject, "trips", "pattern_id", "direction_id", "official_length");
             }
             if (autoCommit) {

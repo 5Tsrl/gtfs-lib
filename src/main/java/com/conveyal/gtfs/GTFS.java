@@ -84,7 +84,7 @@ public abstract class GTFS {
     }
 
     /**
-     * Erase from DB the specify namespace
+     * Drop from DB the specified namespace
      *
      * @return a true or false
      */
