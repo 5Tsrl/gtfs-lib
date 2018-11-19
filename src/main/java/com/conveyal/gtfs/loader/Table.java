@@ -156,6 +156,7 @@ public class Table {
         new StringField("route_long_name",  OPTIONAL),
         new StringField("route_desc",  OPTIONAL),
         // Max route type according to the GTFS spec is 7; however, there is a GTFS proposal that could see this 
+        // Max route type according to the GTFS spec is 7; however, there is a GTFS proposal that could see this
         // max value grow to around 1800: https://groups.google.com/forum/#!msg/gtfs-changes/keT5rTPS7Y0/71uMz2l6ke0J
         new IntegerField("route_type", REQUIRED, 1800),
         new URLField("route_url",  OPTIONAL),
@@ -165,7 +166,7 @@ public class Table {
         // Editor fields below.
         new ShortField("publicly_visible", EDITOR, 1),
         new ShortField("wheelchair_accessible", EDITOR, 2).permitEmptyValue(),
-        new IntegerField("route_sort_order", OPTIONAL, 0, Integer.MAX_VALUE),
+        // 5t new IntegerField("route_sort_order", OPTIONAL, 0, Integer.MAX_VALUE),
         // Status values are In progress (0), Pending approval (1), and Approved (2).
         new ShortField("status", EDITOR,  2)
     ).addPrimaryKey();
