@@ -88,7 +88,8 @@ public class JdbcGtfsSnapshotter {
             copy(Table.PATTERNS, true);
             copy(Table.PATTERN_STOP, true);
             // see method comments fo why different logic is needed for this table
-            createScheduleExceptionsTable();
+            // 5t createScheduleExceptionsTable();
+            createEmptyScheduleExceptionsTable();
             result.shapes = copy(Table.SHAPES, true);
             result.stops = copy(Table.STOPS, true);
             // TODO: Should we defer index creation on stop times?
@@ -154,6 +155,31 @@ public class JdbcGtfsSnapshotter {
         }
         return tableLoadResult;
     }
+
+    /**
+     * 5t
+     */
+
+     private TableLoadResult createEmptyScheduleExceptionsTable() {
+       LOG.info("createEmptyScheduleExceptionsTable");
+       // check to see if the schedule_exceptions table exists
+        boolean scheduleExceptionsTableExists = tableExists(feedIdToSnapshot, "schedule_exceptions");
+        TableLoadResult tableLoadResult = new TableLoadResult();
+
+         if (scheduleExceptionsTableExists) {
+           LOG.info("scheduleExceptionsTableExists true");
+           // schedule_exceptions table already exists in namespace being copied from.  Therefore, we simply copy it.
+           return copy(Table.SCHEDULE_EXCEPTIONS, true);
+         } else {
+           LOG.info("scheduleExceptionsTableExists false");
+           Table.SCHEDULE_EXCEPTIONS.createSqlTable(
+             connection,
+             tablePrefix.replace(".", ""),
+             true
+           );
+         }
+         return tableLoadResult;
+       }
 
     /**
      * Special logic is needed for creating the schedule_exceptions table.
