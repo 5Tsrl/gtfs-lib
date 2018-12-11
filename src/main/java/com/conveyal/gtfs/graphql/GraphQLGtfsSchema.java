@@ -138,6 +138,7 @@ public class GraphQLGtfsSchema {
     public static final GraphQLObjectType fareType = newObject().name("fare_attributes")
             .description("A GTFS agency object")
             .field(MapFetcher.field("id", GraphQLInt))
+            .field(MapFetcher.field("agency_id"))
             .field(MapFetcher.field("fare_id"))
             .field(MapFetcher.field("price", GraphQLFloat))
             .field(MapFetcher.field("currency_type"))
@@ -299,6 +300,7 @@ public class GraphQLGtfsSchema {
             .field(MapFetcher.field("wheelchair_accessible"))
             .field(MapFetcher.field("publicly_visible", GraphQLInt))
             .field(MapFetcher.field("status", GraphQLInt))
+            .field(MapFetcher.field("route_sort_order"))
             // FIXME ^^
             .field(RowCountFetcher.field("trip_count", "trips", "route_id"))
             .field(RowCountFetcher.field("pattern_count", "patterns", "route_id"))
