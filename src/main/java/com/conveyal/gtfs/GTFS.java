@@ -73,28 +73,6 @@ public abstract class GTFS {
     }
 
     /**
-     * Drop from DB the specified namespace
-     *
-     * @return a true or false
-     */
-    public static boolean deleteFeedSource(String nameSpace, DataSource dataSource) {
-      JdbcGtfsCleaner cleaner = new JdbcGtfsCleaner(nameSpace, dataSource);
-      cleaner.deleteFeedSource();
-      return true;
-    }
-
-    /**
-     * Drop from DB the specified namespace
-     *
-     * @return a true or false
-     */
-    public static boolean deleteFeedVersion(String nameSpace, DataSource dataSource) {
-      JdbcGtfsCleaner cleaner = new JdbcGtfsCleaner(nameSpace, dataSource);
-      cleaner.deleteFeedVersion();
-      return true;
-    }
-
-    /**
      * Copy all tables for a given feed ID (schema namespace) into a new namespace in the given JDBC DataSource.
      *
      * The resulting snapshot from this operation is intended to be edited, so there are a handful of changes made to
