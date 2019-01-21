@@ -104,7 +104,8 @@ public class Table {
         new DateField("start_date", REQUIRED),
         new DateField("end_date", REQUIRED),
         // Editor-specific field
-        new StringField("description", EDITOR)
+        //5t we need the field below in the export too...
+        new StringField("description", OPTIONAL)
     ).restrictDelete().addPrimaryKey();
 
     public static final Table SCHEDULE_EXCEPTIONS = new Table("schedule_exceptions", ScheduleException.class, EDITOR,
@@ -259,10 +260,11 @@ public class Table {
         new ShortField("bikes_allowed", OPTIONAL, 2),
         // Editor-specific fields below.
         new StringField("pattern_id", EDITOR).isReferenceTo(PATTERNS),
-        new IntegerField("official_length", EDITOR, Integer.MAX_VALUE),
-        new ShortField("contributed", EDITOR, 1),
-        new DateField("start_date", EDITOR),
-        new DateField("end_date", EDITOR)
+        // 5t we need the fields below in export too, so mark them as OPTIONAL instead of EDITOR
+        new IntegerField("official_length", OPTIONAL, Integer.MAX_VALUE),
+        new ShortField("contributed", OPTIONAL, 1),
+        new DateField("start_date", OPTIONAL),
+        new DateField("end_date", OPTIONAL)
 
     ).addPrimaryKey();
 
