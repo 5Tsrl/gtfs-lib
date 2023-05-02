@@ -26,6 +26,7 @@ public class FeedInfo extends Entity implements Cloneable {
     public String default_lang;
     public String feed_contact_email;
     public URL feed_contact_url;
+    public String    cod_contratto;
 
     public FeedInfo clone () {
         try {
@@ -57,7 +58,7 @@ public class FeedInfo extends Entity implements Cloneable {
         statement.setString(oneBasedIndex++, feed_contact_email);
         String feedContactUrl = feed_contact_url != null ? feed_contact_url.toString() : null;
         statement.setString(oneBasedIndex++, feedContactUrl);
-
+        statement.setString(oneBasedIndex++, cod_contratto);
     }
 
     public static class Loader extends Entity.Loader<FeedInfo> {
@@ -76,6 +77,7 @@ public class FeedInfo extends Entity implements Cloneable {
             FeedInfo fi = new FeedInfo();
             fi.id = row + 1; // offset line number by 1 to account for 0-based row index
             fi.feed_id = getStringField("feed_id", false);
+            fi.cod_contratto = getStringField("cod_contratto", false);
             fi.feed_publisher_name = getStringField("feed_publisher_name", true);
             fi.feed_publisher_url = getUrlField("feed_publisher_url", true);
             fi.feed_lang = getStringField("feed_lang", true);
@@ -104,7 +106,7 @@ public class FeedInfo extends Entity implements Cloneable {
         @Override
         public void writeHeaders() throws IOException {
             writer.writeRecord(new String[] {"feed_id", "feed_publisher_name", "feed_publisher_url", "feed_lang",
-                    "feed_start_date", "feed_end_date", "feed_version", "default_lang", "feed_contact_email", "feed_contact_url"});
+                    "feed_start_date", "feed_end_date", "feed_version", "default_lang", "feed_contact_email", "feed_contact_url", "cod_contratto"});
         }
 
         @Override
@@ -124,6 +126,7 @@ public class FeedInfo extends Entity implements Cloneable {
             writeStringField(i.default_lang);
             writeStringField(i.feed_contact_email);
             writeUrlField(i.feed_contact_url);
+            writeStringField(i.cod_contratto);
             endRecord();
         }
 

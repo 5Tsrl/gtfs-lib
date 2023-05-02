@@ -70,10 +70,11 @@ public class MisplacedStopValidator extends FeedValidator {
         // determine if a stop is in a low population grid cell or is an outlier
         BooleanAsciiGrid populationGrid = BooleanAsciiGrid.forEarthPopulation();
         for (Stop stop : feed.stops) {
+        	/*// 5t
             boolean stopInPopulatedArea = populationGrid.getValueForCoords(stop.stop_lon, stop.stop_lat);
             if (!stopInPopulatedArea) {
                 registerError(stop, STOP_LOW_POPULATION_DENSITY, getCoordString(stop));
-            }
+            }*/
             if (stop.stop_lat < minLat || stop.stop_lat > maxLat || stop.stop_lon < minLon || stop.stop_lon > maxLon) {
                 registerError(stop, STOP_GEOGRAPHIC_OUTLIER, getCoordString(stop));
             } else {

@@ -103,7 +103,12 @@ public class JdbcGtfsSnapshotter {
             copy(Table.PATTERNS, true);
             copy(Table.PATTERN_STOP, true);
             // see method comments fo why different logic is needed for this table
-            result.scheduleExceptions = createScheduleExceptionsTable();
+            // 5t result.scheduleExceptions = createScheduleExceptionsTable();
+            result.scheduleExceptions = createEmptyScheduleExceptionsTable();
+            // 5t create basic calendars
+            createBasicCalendarTable();
+            LOG.info("Committing transaction for ScheduleExceptionsTable and BasicCalendarTable");
+            connection.commit();            
             result.shapes = copy(Table.SHAPES, true);
             result.stops = copy(Table.STOPS, true);
             // TODO: Should we defer index creation on stop times?
@@ -127,6 +132,71 @@ public class JdbcGtfsSnapshotter {
             if (connection != null) DbUtils.closeQuietly(connection);
         }
         return result;
+    }
+    
+    /**
+     * Crea un nuovo snapshot copiandoci le tabelle relative alla linea passata come parametro
+     */
+    public SnapshotResult copyRouteTables() {
+    	// This result object will be returned to the caller to summarize the feed and report any critical errors.
+    	SnapshotResult result = new SnapshotResult();
+    	
+    	try {
+    		long startTime = System.currentTimeMillis();
+    		// We get a single connection object and share it across several different methods.
+    		// This ensures that actions taken in one method are visible to all subsequent SQL statements.
+    		// If we create a schema or table on one connection, then access it in a separate connection, we have no
+    		// guarantee that it exists when the accessing statement is executed.
+    		connection = dataSource.getConnection();
+    		// Generate a unique prefix that will identify this feed.
+    		this.tablePrefix = randomIdString();
+    		result.uniqueIdentifier = tablePrefix;
+    		// Create entry in snapshots table.
+    		registerSnapshot();
+    		// Include the dot separator in the table prefix.
+    		// This allows everything to work even when there's no prefix.
+    		this.tablePrefix += ".";
+    		// Copy each table in turn
+    		// FIXME: NO non-fatal exception errors are being captured during copy operations.
+    		///result.agency = copy(Table.AGENCY, true);
+    		result.calendar = copy(Table.CALENDAR, true);
+    		result.calendarDates = copy(Table.CALENDAR_DATES, true);
+    		////result.fareAttributes = copy(Table.FARE_ATTRIBUTES, true);
+    		////result.fareRules = copy(Table.FARE_RULES, true);
+    		result.feedInfo = copy(Table.FEED_INFO, true);
+    		////result.frequencies = copy(Table.FREQUENCIES, true);
+    		///result.routes = copy(Table.ROUTES, true);
+    		// FIXME: Find some place to store errors encountered on copy for patterns and pattern stops.
+    		///copy(Table.PATTERNS, true);
+    		///copy(Table.PATTERN_STOP, true);
+    		// see method comments fo why different logic is needed for this table
+    		// 5t result.scheduleExceptions = createScheduleExceptionsTable();
+    		result.scheduleExceptions = createEmptyScheduleExceptionsTable();
+    		// 5t create basic calendars
+    		createBasicCalendarTable();
+            LOG.info("Committing transaction for ScheduleExceptionsTable and BasicCalendarTable");
+            connection.commit();            
+    		///result.shapes = copy(Table.SHAPES, true);
+    		result.stops = copy(Table.STOPS, true);
+    		// TODO: Should we defer index creation on stop times?
+    		// Copying all tables for STIF w/ stop times idx = 156 sec; w/o = 28 sec
+    		// Other feeds w/ stop times AC Transit = 3 sec; Brooklyn bus =
+    		///result.stopTimes = copy(Table.STOP_TIMES, true);
+    		////result.transfers = copy(Table.TRANSFERS, true);
+    		///result.trips = copy(Table.TRIPS, true);
+    		result.completionTime = System.currentTimeMillis();
+    		result.loadTimeMillis = result.completionTime - startTime;
+    		LOG.info("Copying tables took {} sec", (result.loadTimeMillis) / 1000);
+    	} catch (Exception ex) {
+    		// Note: Exceptions that occur during individual table loads are separately caught and stored in
+    		// TableLoadResult.
+    		LOG.error("Exception while creating snapshot: {}", ex.toString());
+    		ex.printStackTrace();
+    		result.fatalException = ex.toString();
+    	} finally {
+    		if (connection != null) DbUtils.closeQuietly(connection);
+    	}
+    	return result;
     }
 
     /**
@@ -173,6 +243,128 @@ public class JdbcGtfsSnapshotter {
         }
         return tableLoadResult;
     }
+
+    /**
+    * 5t Creates a "basic" calendar table, based on distinct values of service_id appearing in calendar_dates table
+    */
+    private TableLoadResult createBasicCalendarTable() {
+      LOG.info("createBasicCalendarTable");
+      TableLoadResult tableLoadResult = new TableLoadResult();
+
+      // check to see if the calendar table exists
+      if (feedIdToSnapshot != null && !tableExists(feedIdToSnapshot, "calendar") ) {
+        LOG.info("calendarTableExists false. Let's create a basic calendar table derived from table calendar_dates");
+        Table.CALENDAR.createSqlTable(
+          connection,
+          tablePrefix.replace(".", ""),
+          true
+        );
+      }
+      // put basic calendars if calendar table is empty
+      if (feedIdToSnapshot != null && tableIsEmpty(feedIdToSnapshot, "calendar"))
+      {
+        try {
+          JDBCTableReader<CalendarDate> calendarDatesReader = new JDBCTableReader<CalendarDate>(
+            Table.CALENDAR_DATES,
+            dataSource,
+            feedIdToSnapshot + ".",
+            EntityPopulator.CALENDAR_DATE
+          );
+          Iterable<CalendarDate> calendarDates = calendarDatesReader.getAll();
+
+          // Keep track of calendars by service id because we need to add dummy calendar entries.
+          Map<String, Calendar> calendarsByServiceId = new HashMap<>();
+
+          for (CalendarDate calendarDate : calendarDates) {
+            // Skip any null dates
+            if (calendarDate.date == null) {
+              LOG.warn("Encountered calendar date record with null value for date field. Skipping.");
+              continue;
+            }
+            if (calendarDate.exception_type == 1) {
+              Calendar calendar = calendarsByServiceId.getOrDefault(calendarDate.service_id, new Calendar());
+              calendar.service_id = calendarDate.service_id;
+              if (calendar.start_date == null || calendar.start_date.isAfter(calendarDate.date)) {
+                calendar.start_date = calendarDate.date;
+              }
+              if (calendar.end_date == null || calendar.end_date.isBefore(calendarDate.date)) {
+                calendar.end_date = calendarDate.date;
+              }
+              calendarsByServiceId.put(calendarDate.service_id, calendar);
+            }
+          }
+
+          if ( calendarDatesReader.getRowCount() > 0 ) {
+            String sql = String.format(
+              "insert into %s (service_id, description, start_date, end_date, " +
+              "monday, tuesday, wednesday, thursday, friday, saturday, sunday)" +
+              "values (?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0)",
+              tablePrefix + "calendar"
+            );
+            PreparedStatement calendarStatement = connection.prepareStatement(sql);
+            final BatchTracker calendarsTracker = new BatchTracker(
+              "calendar",
+              calendarStatement
+            );
+            for (Calendar calendar : calendarsByServiceId.values()) {
+              calendarStatement.setString(1, calendar.service_id);
+              calendarStatement.setString(
+                2,
+                String.format("%s (auto-generato)", calendar.service_id)
+              );
+              calendarStatement.setString(
+                3,
+                calendar.start_date.format(DateTimeFormatter.BASIC_ISO_DATE)
+              );
+              calendarStatement.setString(
+                4,
+                calendar.end_date.format(DateTimeFormatter.BASIC_ISO_DATE)
+              );
+              calendarsTracker.addBatch();
+            }
+            calendarsTracker.executeRemaining();
+          }
+          connection.commit();
+        } catch (Exception e) {
+          tableLoadResult.fatalException = e.toString();
+          LOG.error("Error creating basic calendars: ", e);
+          e.printStackTrace();
+          try {
+            connection.rollback();
+           } catch (SQLException ex) {
+             ex.printStackTrace();
+           }
+        }
+      }
+      LOG.info("done creating basic calendars");
+      return tableLoadResult;
+    }
+
+    /**
+     * 5t
+     * @throws SQLException 
+     */
+
+     private TableLoadResult createEmptyScheduleExceptionsTable() throws SQLException {
+       LOG.info("createEmptyScheduleExceptionsTable");
+       // check to see if the schedule_exceptions table exists
+        boolean scheduleExceptionsTableExists = tableExists(feedIdToSnapshot, "schedule_exceptions");
+        TableLoadResult tableLoadResult = new TableLoadResult();
+
+         if (scheduleExceptionsTableExists) {
+           LOG.info("scheduleExceptionsTableExists true");
+           // schedule_exceptions table already exists in namespace being copied from.  Therefore, we simply copy it.
+           return copy(Table.SCHEDULE_EXCEPTIONS, true);
+         } else {
+           LOG.info("scheduleExceptionsTableExists false");
+           Table.SCHEDULE_EXCEPTIONS.createSqlTable(
+             connection,
+             tablePrefix.replace(".", ""),
+             true
+           );
+         }
+         return tableLoadResult;
+       }
 
     /**
      * Special logic is needed for creating the schedule_exceptions table.
@@ -358,6 +550,24 @@ public class JdbcGtfsSnapshotter {
             ResultSet resultSet = tableExistsStatement.executeQuery();
             resultSet.next();
             return resultSet.getBoolean(1);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    /**
+     * 5T Helper method to determine if a table is empty within a namespace.
+     */
+    private boolean tableIsEmpty(String namespace, String tableName) {
+        // Preempt SQL check with null check of either namespace or table name.
+        if (namespace == null || tableName == null) return false;
+        try {
+            PreparedStatement tableIsEmptyStatement = connection.prepareStatement(
+                "SELECT COUNT(*) FROM " + tablePrefix + tableName + ";"
+            );
+            ResultSet resultSet = tableIsEmptyStatement.executeQuery();
+            resultSet.next();
+            return resultSet.getInt(1) == 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;

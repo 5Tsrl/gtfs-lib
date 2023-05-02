@@ -1,10 +1,13 @@
 package com.conveyal.gtfs.model;
 
 import com.conveyal.gtfs.GTFSFeed;
+import com.conveyal.gtfs.loader.DateField;
+import com.conveyal.gtfs.loader.Table;
 
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.Iterator;
 
 public class Trip extends Entity {
@@ -15,12 +18,21 @@ public class Trip extends Entity {
     public String trip_id;
     public String trip_headsign;
     public String trip_short_name;
-    public int    direction_id;
+    public int direction_id;
     public String block_id;
     public String shape_id;
-    public int    bikes_allowed;
-    public int    wheelchair_accessible;
+    public int bikes_allowed;
+    public int wheelchair_accessible;
     public String feed_id;
+    public int official_length;
+    public int contributed;
+    public int seat;
+    public int stand;
+    public LocalDate start_date;
+    public LocalDate end_date;
+    public int confirmation_trip;
+    public int trip_type;
+
 
     @Override
     public String getId() {
@@ -35,6 +47,8 @@ public class Trip extends Entity {
     public void setStatementParameters(PreparedStatement statement, boolean setDefaultId) throws SQLException {
         int oneBasedIndex = 1;
         if (!setDefaultId) statement.setInt(oneBasedIndex++, id);
+        DateField startDateField = (DateField) Table.CALENDAR.getFieldForName("start_date");
+        DateField endDateField = ((DateField) Table.CALENDAR.getFieldForName("end_date"));
         statement.setString(oneBasedIndex++, trip_id);
         statement.setString(oneBasedIndex++, route_id);
         statement.setString(oneBasedIndex++, service_id);
@@ -45,6 +59,15 @@ public class Trip extends Entity {
         statement.setString(oneBasedIndex++, shape_id);
         setIntParameter(statement, oneBasedIndex++, wheelchair_accessible);
         setIntParameter(statement, oneBasedIndex++, bikes_allowed);
+        setIntParameter(statement, oneBasedIndex++, official_length);
+        setIntParameter(statement, oneBasedIndex++, contributed);
+        setIntParameter(statement, oneBasedIndex++, seat);
+        setIntParameter(statement, oneBasedIndex++, stand);
+        startDateField.setParameter(statement, oneBasedIndex++, start_date);
+        endDateField.setParameter(statement, oneBasedIndex++, end_date);
+        setIntParameter(statement, oneBasedIndex++, confirmation_trip);
+        setIntParameter(statement, oneBasedIndex++, trip_type);
+
         // Editor-specific field? pattern_id
         statement.setString(oneBasedIndex++, null);
     }
@@ -75,8 +98,16 @@ public class Trip extends Entity {
             t.shape_id        = getStringField("shape_id", false);
             t.bikes_allowed   = getIntField("bikes_allowed", false, 0, 2);
             t.wheelchair_accessible = getIntField("wheelchair_accessible", false, 0, 2);
+            t.official_length = getIntField("official_length", false, 0, Integer.MAX_VALUE);
+            t.contributed     = getIntField("contributed", false, 0, 1);
+            t.seat            = getIntField("seat", false, 0, 1000);
+            t.stand           = getIntField("stand", false, 0, 1000);
+            t.start_date = getDateField("start_date", true);
+            t.end_date = getDateField("end_date", true);
             t.feed = feed;
             t.feed_id = feed.feedId;
+            t.confirmation_trip     = getIntField("confirmation_trip", false, 0, 1);
+            t.trip_type     = getIntField("trip_type", false, 0, 10);
             // Attempting to put a null key or value will cause an NPE in BTreeMap
             if (t.trip_id != null) feed.trips.put(t.trip_id, t);
 
@@ -100,7 +131,8 @@ public class Trip extends Entity {
         protected void writeHeaders() throws IOException {
             // TODO: export shapes
             writer.writeRecord(new String[] {"route_id", "trip_id", "trip_headsign", "trip_short_name", "direction_id", "block_id",
-                    "shape_id", "bikes_allowed", "wheelchair_accessible", "service_id"});
+                    "shape_id", "bikes_allowed", "wheelchair_accessible", "service_id", "official_length", "contributed", "seat", 
+                    "stand", "start_date", "end_date", "confirmation_trip", "trip_type"});
         }
 
         @Override
@@ -115,6 +147,15 @@ public class Trip extends Entity {
             writeIntField(t.bikes_allowed);
             writeIntField(t.wheelchair_accessible);
             writeStringField(t.service_id);
+            writeIntField(t.official_length);
+            writeIntField(t.contributed);
+            writeIntField(t.seat);
+            writeIntField(t.stand);
+            writeDateField(t.start_date);
+            writeDateField(t.end_date);
+            writeIntField(t.confirmation_trip);
+            writeIntField(t.trip_type);
+
             endRecord();
         }
 

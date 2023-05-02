@@ -48,11 +48,12 @@ public class ReferencesTripValidator extends TripValidator {
 
     @Override
     public void complete (ValidationResult validationResult) {
-        for (Stop stop : feed.stops) {
+        // 5t disabilitiamo per il momento questo controllo
+    	/*for (Stop stop : feed.stops) {
             if (!referencedStops.contains(stop.stop_id)) {
                 registerError(stop, STOP_UNUSED, stop.stop_id);
             }
-        }
+        }*/
         for (Trip trip : feed.trips) {
             if (!referencedTrips.contains(trip.trip_id)) {
                 registerError(trip, TRIP_EMPTY);

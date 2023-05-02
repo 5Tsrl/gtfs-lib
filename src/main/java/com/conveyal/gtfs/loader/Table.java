@@ -57,6 +57,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static com.conveyal.gtfs.error.NewGTFSErrorType.DUPLICATE_HEADER;
+import static com.conveyal.gtfs.error.NewGTFSErrorType.DUPLICATE_ID;
+import static com.conveyal.gtfs.error.NewGTFSErrorType.REFERENTIAL_INTEGRITY;
 import static com.conveyal.gtfs.error.NewGTFSErrorType.TABLE_IN_SUBDIRECTORY;
 import static com.conveyal.gtfs.loader.JdbcGtfsLoader.sanitize;
 import static com.conveyal.gtfs.loader.Requirement.EDITOR;
@@ -138,7 +140,8 @@ public class Table {
         new DateField("start_date", REQUIRED),
         new DateField("end_date", REQUIRED),
         // Editor-specific field
-        new StringField("description", EDITOR)
+        //5t we need the field below in the export too...
+        new StringField("description", OPTIONAL)
     ).restrictDelete().addPrimaryKey();
 
     public static final Table SCHEDULE_EXCEPTIONS = new Table("schedule_exceptions", ScheduleException.class, EDITOR,
@@ -146,16 +149,17 @@ public class Table {
             // FIXME: Change to DateListField
             new DateListField("dates", REQUIRED),
             new ShortField("exemplar", REQUIRED, 9),
-            new StringListField("custom_schedule", OPTIONAL).isReferenceTo(CALENDAR),
-            new StringListField("added_service", OPTIONAL).isReferenceTo(CALENDAR),
-            new StringListField("removed_service", OPTIONAL).isReferenceTo(CALENDAR)
+            new StringListField("custom_schedule", OPTIONAL),//5t .isReferenceTo(CALENDAR),
+            new StringListField("added_service", OPTIONAL),//5t .isReferenceTo(CALENDAR),
+            new StringListField("removed_service", OPTIONAL)//5t .isReferenceTo(CALENDAR)
     );
 
     public static final Table CALENDAR_DATES = new Table("calendar_dates", CalendarDate.class, OPTIONAL,
         new StringField("service_id", REQUIRED).isReferenceTo(CALENDAR),
         new DateField("date", REQUIRED),
         new IntegerField("exception_type", REQUIRED, 1, 2)
-    ).keyFieldIsNotUnique();
+    ).keyFieldIsNotUnique()
+    .withParentTable(CALENDAR);
 
     public static final Table FARE_ATTRIBUTES = new Table("fare_attributes", FareAttribute.class, OPTIONAL,
         new StringField("fare_id", REQUIRED),
@@ -176,13 +180,17 @@ public class Table {
     public static final Table FEED_INFO = new Table("feed_info", FeedInfo.class, OPTIONAL,
         new StringField("feed_publisher_name", REQUIRED),
         // feed_id is not the first field because that would label it as the key field, which we do not want because the
-        // key field cannot be optional. feed_id is not part of the GTFS spec, but is required by OTP to associate static GTFS with GTFS-rt feeds.
+        // key field cannot be optional.
         new StringField("feed_id", OPTIONAL),
-        new URLField("feed_publisher_url", REQUIRED),
-        new LanguageField("feed_lang", REQUIRED),
+        new URLField("feed_publisher_url", REQUIRED).permitEmptyValue(),
+        new LanguageField("feed_lang", REQUIRED).permitEmptyValue(),
         new DateField("feed_start_date", OPTIONAL),
         new DateField("feed_end_date", OPTIONAL),
         new StringField("feed_version", OPTIONAL),
+        // 5T used by AMP Omnibus
+        // new StringField("id_ente", OPTIONAL),    // eliminato dall'ui
+        // 5T codice del contratto per l'Osservatorio del Ministero
+        new StringField("cod_contratto", OPTIONAL),
         // Editor-specific field that represents default route values for use in editing.
         new ColorField("default_route_color", EDITOR),
         // FIXME: Should the route type max value be equivalent to GTFS spec's max?
@@ -241,7 +249,10 @@ public class Table {
             // direction_id and shape_id are exemplar fields applied to all trips for a pattern.
             new ShortField("direction_id", EDITOR, 1),
             new ShortField("use_frequency", EDITOR, 1),
-            new StringField("shape_id", EDITOR).isReferenceTo(SHAPES)
+            new StringField("shape_id", EDITOR).isReferenceTo(SHAPES),
+            // 5t we need the fields below in export too, so mark it as OPTIONAL instead of EDITOR
+            new IntegerField("official_length", OPTIONAL, Integer.MAX_VALUE),
+            new ShortField("trip_type", OPTIONAL, 10)
     ).addPrimaryKey();
 
     public static final Table STOPS = new Table("stops", Stop.class, REQUIRED,
@@ -334,7 +345,17 @@ public class Table {
         new ShortField("wheelchair_accessible", OPTIONAL, 2),
         new ShortField("bikes_allowed", OPTIONAL, 2),
         // Editor-specific fields below.
-        new StringField("pattern_id", EDITOR).isReferenceTo(PATTERNS)
+        new StringField("pattern_id", EDITOR).isReferenceTo(PATTERNS),
+        // 5t we need the fields below in export too, so mark them as OPTIONAL instead of EDITOR
+        new IntegerField("official_length", OPTIONAL, Integer.MAX_VALUE),
+        new ShortField("contributed", OPTIONAL, 1),
+        new ShortField("seat", OPTIONAL, 1000),
+        new ShortField("stand", OPTIONAL, 1000),
+        new DateField("start_date", OPTIONAL),
+        new DateField("end_date", OPTIONAL),
+        new ShortField("confirmation_trip", OPTIONAL, 1),
+        new ShortField("trip_type", OPTIONAL, 10)
+
     ).addPrimaryKey();
 
     // Must come after TRIPS and STOPS table to which it has references

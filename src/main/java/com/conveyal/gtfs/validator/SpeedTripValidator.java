@@ -123,7 +123,8 @@ public class SpeedTripValidator extends TripValidator {
      */
     public void complete (ValidationResult validationResult) {
         if (!allTravelTimesAreRounded) storeErrors(travelTimeZeroErrors);
-        else registerError(NewGTFSError.forFeed(FEED_TRAVEL_TIMES_ROUNDED, null));
+        /*// 5t
+        else registerError(NewGTFSError.forFeed(FEED_TRAVEL_TIMES_ROUNDED, null));*/
     }
 
     /**

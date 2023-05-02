@@ -1,3 +1,4 @@
+
 package com.conveyal.gtfs;
 
 import com.conveyal.gtfs.error.NewGTFSError;
@@ -11,7 +12,6 @@ import com.conveyal.gtfs.model.StopTime;
 import com.conveyal.gtfs.model.Trip;
 import com.conveyal.gtfs.validator.service.GeoUtils;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateList;
@@ -24,11 +24,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import static com.conveyal.gtfs.util.Util.human;
@@ -46,7 +46,8 @@ public class PatternFinder {
     private static final Logger LOG = LoggerFactory.getLogger(PatternFinder.class);
 
     // A multi-map that groups trips together by their sequence of stops
-    private Multimap<TripPatternKey, Trip> tripsForPattern = LinkedHashMultimap.create();
+    // 5t private Multimap<TripPatternKey, Trip> tripsForPattern = LinkedHashMultimap.create();
+    private Multimap<TripPatternKey, Trip> tripsForPattern = HashMultimap.create();
 
     private int nTripsProcessed = 0;
 
@@ -88,8 +89,9 @@ public class PatternFinder {
         // Make pattern ID one-based to avoid any JS type confusion between an ID of zero vs. null value.
         int nextPatternId = 1;
         // Create an in-memory list of Patterns because we will later rename them before inserting them into storage.
-        // Use a LinkedHashMap so we can retrieve the entrySets later in the order of insertion.
-        Map<TripPatternKey, Pattern> patterns = new LinkedHashMap<>();
+        // 5t ordiniamo i pattern raggrupparti per route_id
+        // Map<TripPatternKey, Pattern> patterns = new LinkedHashMap<>();
+        Map<TripPatternKey, Pattern> patterns = new TreeMap<>();
         // TODO assign patterns sequential small integer IDs (may include route)
         for (TripPatternKey key : tripsForPattern.keySet()) {
             Collection<Trip> trips = tripsForPattern.get(key);
@@ -99,6 +101,7 @@ public class PatternFinder {
             // FIXME: Should associated shapes be a single entry?
             pattern.associatedShapes = new HashSet<>();
             trips.stream().forEach(trip -> pattern.associatedShapes.add(trip.shape_id));
+            /* 5t disabilitiamo temporaneamente
             if (pattern.associatedShapes.size() > 1 && errorStorage != null) {
                 // Store an error if there is more than one shape per pattern. Note: error storage is null if called via
                 // MapDB implementation.
@@ -107,7 +110,7 @@ public class PatternFinder {
                         pattern,
                         NewGTFSErrorType.MULTIPLE_SHAPES_FOR_PATTERN)
                             .setBadValue(pattern.associatedShapes.toString()));
-            }
+            }*/
             patterns.put(key, pattern);
         }
         // Name patterns before storing in SQL database.
@@ -167,19 +170,21 @@ public class PatternFinder {
                 intersection.retainAll(info.toStops.get(toName));
 
                 if (intersection.size() == 1) {
-                    pattern.name = String.format(Locale.US, "from %s to %s", fromName, toName);
+                    pattern.name = String.format(Locale.US, "%s >> %s", fromName, toName);
                     continue;
                 }
 
                 // check for unique via stop
+                /* 5t moved below
                 pattern.orderedStops.stream().map(stopById::get).forEach(stop -> {
                     Set<Pattern> viaIntersection = new HashSet<>(intersection);
                     viaIntersection.retainAll(info.vias.get(stop.stop_name));
 
                     if (viaIntersection.size() == 1) {
-                        pattern.name = String.format(Locale.US, "from %s to %s via %s", fromName, toName, stop.stop_name);
+                        pattern.name = String.format(Locale.US, "%s >> %s via %s", fromName, toName, stop.stop_name);
                     }
                 });
+                */
 
                 if (pattern.name == null) {
                     // no unique via, one pattern is subset of other.
@@ -188,26 +193,39 @@ public class PatternFinder {
                         Pattern p0 = it.next();
                         Pattern p1 = it.next();
                         if (p0.orderedStops.size() > p1.orderedStops.size()) {
-                            p1.name = String.format(Locale.US, "from %s to %s express", fromName, toName);
-                            p0.name = String.format(Locale.US, "from %s to %s local", fromName, toName);
+                            p1.name = String.format(Locale.US, "%s >> %s express", fromName, toName);
+                            p0.name = String.format(Locale.US, "%s >> %s local", fromName, toName);
                         } else if (p1.orderedStops.size() > p0.orderedStops.size()){
-                            p0.name = String.format(Locale.US, "from %s to %s express", fromName, toName);
-                            p1.name = String.format(Locale.US, "from %s to %s local", fromName, toName);
+                            p0.name = String.format(Locale.US, "%s >> %s express", fromName, toName);
+                            p1.name = String.format(Locale.US, "%s >> %s local", fromName, toName);
                         }
+                    }
+                }
+
+                // check for unique via stop
+                for (String stopId : pattern.orderedStops) {
+                    Set<Pattern> viaIntersection = new HashSet<>(intersection);
+                    Stop stop = stopById.get(stopId);
+                    viaIntersection.retainAll(info.vias.get(stop.stop_name));
+
+                    if (viaIntersection.size() == 1) {
+                        if(pattern.name == null)
+                            pattern.name = String.format(Locale.US, "%s >> %s via %s", fromName, toName, stop.stop_name);
                     }
                 }
 
                 if (pattern.name == null) {
                     // give up
-                    pattern.name = String.format(Locale.US, "from %s to %s like trip %s", fromName, toName, pattern.associatedTrips.get(0));
+                    pattern.name = String.format(Locale.US, "%s >> %s like trip %s", fromName, toName, pattern.associatedTrips.get(0));
                 }
             }
 
+            // 5t removed trips and stops count from pattern name
             // attach a stop and trip count to each
-            for (Pattern pattern : info.patternsOnRoute) {
+            /*for (Pattern pattern : info.patternsOnRoute) {
                 pattern.name = String.format(Locale.US, "%s stops %s (%s trips)",
                         pattern.orderedStops.size(), pattern.name, pattern.associatedTrips.size());
-            }
+            }*/
         }
     }
 

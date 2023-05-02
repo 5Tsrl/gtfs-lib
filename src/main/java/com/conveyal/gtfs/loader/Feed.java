@@ -109,8 +109,11 @@ public class Feed {
             } catch (Exception e) {
                 // store an error if the validator fails
                 // FIXME: should the exception be stored?
-                String badValue = String.join(":", validatorName, e.toString());
-                errorStorage.storeError(NewGTFSError.forFeed(VALIDATOR_FAILED, badValue));
+                // 5T un po' meno log
+            	if(!e.toString().contains("ERROR: column \"pattern_id\" of relation \"trips\" already exists")) {
+	                String badValue = String.join(":", validatorName, e.toString());
+	                errorStorage.storeError(NewGTFSError.forFeed(VALIDATOR_FAILED, badValue));
+            	}
                 LOG.error("{} failed.", validatorName);
                 LOG.error(e.toString());
                 e.printStackTrace();
@@ -122,7 +125,10 @@ public class Feed {
                 feedValidator.complete(validationResult);
             } catch (Exception e) {
                 String badValue = String.join(":", feedValidator.getClass().getSimpleName(), e.toString());
-                errorStorage.storeError(NewGTFSError.forFeed(VALIDATOR_FAILED, badValue));
+                // 5T un po' meno log
+                if(!e.toString().contains("ERROR: column \"pattern_id\" of relation \"trips\" already exists")) {
+	                errorStorage.storeError(NewGTFSError.forFeed(VALIDATOR_FAILED, badValue));
+            	}
                 LOG.error("Validator failed completion stage.", e);
             }
         }

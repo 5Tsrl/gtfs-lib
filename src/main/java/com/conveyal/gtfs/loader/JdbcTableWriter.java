@@ -224,7 +224,10 @@ public class JdbcTableWriter implements TableWriter {
                         jsonObject,
                         "trips",
                         "pattern_id",
-                        "direction_id", "shape_id"
+                        "direction_id",
+                        "shape_id",
+                        "official_length",
+                        "trip_type"
                     );
                     break;
                 default:
@@ -649,7 +652,7 @@ public class JdbcTableWriter implements TableWriter {
                 // check the values here as a sanity check.
                 int orderValue = subEntity.get(orderFieldName).asInt();
                 boolean orderIsUnique = orderValues.add(orderValue);
-                boolean valuesAreIncrementing = ++previousOrder == orderValue;
+                boolean valuesAreIncrementing = previousOrder < orderValue; //5t = ++previousOrder == orderValue;
                 if (!orderIsUnique || !valuesAreIncrementing) {
                     throw new SQLException(
                         String.format(
@@ -662,6 +665,7 @@ public class JdbcTableWriter implements TableWriter {
                         )
                     );
                 }
+                previousOrder = orderValue; //5t
             }
             // Log statement on first iteration so that it is not logged for each item in the batch.
             if (entityCount == 0) LOG.info(insertStatement.toString());
@@ -1573,7 +1577,7 @@ public class JdbcTableWriter implements TableWriter {
                                     // The entity must not have any referencing entities in order to delete it.
                                     connection.rollback();
                                     String message = String.format(
-                                            "Cannot delete %s %s=%s. %d %s reference this %s.",
+                                            "Impossibile cancellare questo/a %s con %s=%s.  %d %s riferisce questo/a %s.",
                                             entityClass.getSimpleName(),
                                             keyField.name,
                                             keyValue,

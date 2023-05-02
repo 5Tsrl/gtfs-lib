@@ -8,5 +8,7 @@
 *.iml
 .idea/
 target/
-
+.classpath
+.project
+.settings/
 lambda$*.json

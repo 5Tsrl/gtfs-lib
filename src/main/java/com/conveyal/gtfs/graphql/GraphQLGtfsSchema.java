@@ -72,6 +72,15 @@ public class GraphQLGtfsSchema {
             .field(MapFetcher.field("agency_timezone"))
             .build();
 
+ // 5T Represents rows from calendar_dates.txt
+    public static final GraphQLObjectType calendarDatesType = newObject().name("calendarDates")
+            .description("A GTFS calendar_date object")
+            .field(MapFetcher.field("id", GraphQLInt))
+            .field(MapFetcher.field("service_id", GraphQLString))
+            .field(MapFetcher.field("date", GraphQLString))
+            .field(MapFetcher.field("exception_type", GraphQLInt))
+            .build();
+
     // Represents rows from calendar.txt
     public static final GraphQLObjectType calendarType = newObject()
             .name("calendar")
@@ -88,6 +97,13 @@ public class GraphQLGtfsSchema {
             .field(MapFetcher.field("end_date"))
             // FIXME: Description is an editor-specific field
             .field(MapFetcher.field("description"))
+            // 5T
+            .field(newFieldDefinition()
+                    .name("calendar_dates")
+                    .type(new GraphQLList(calendarDatesType))
+                    .argument(intArg(LIMIT_ARG))
+                    .dataFetcher(new JDBCFetcher("calendar_dates", "service_id", "date", false))
+                    .build())
             .build();
 
     private static final GraphQLScalarType stringList = new GraphQLScalarType("StringList", "List of Strings", new StringCoercing());
@@ -156,6 +172,7 @@ public class GraphQLGtfsSchema {
             // Editor-specific fields
             .field(MapFetcher.field("default_route_color"))
             .field(MapFetcher.field("default_route_type"))
+            .field(MapFetcher.field("cod_contratto"))
             .build();
 
     // Represents rows from shapes.txt
@@ -198,6 +215,14 @@ public class GraphQLGtfsSchema {
             .field(MapFetcher.field("wheelchair_accessible", GraphQLInt))
             .field(MapFetcher.field("bikes_allowed", GraphQLInt))
             .field(MapFetcher.field("shape_id"))
+            .field(MapFetcher.field("official_length", GraphQLInt))
+            .field(MapFetcher.field("contributed", GraphQLInt))
+            .field(MapFetcher.field("seat", GraphQLInt))
+            .field(MapFetcher.field("stand", GraphQLInt))
+            .field(MapFetcher.field("start_date"))
+            .field(MapFetcher.field("end_date"))
+            .field(MapFetcher.field("confirmation_trip", GraphQLInt))
+            .field(MapFetcher.field("trip_type", GraphQLInt))
             .field(MapFetcher.field("pattern_id"))
             .field(newFieldDefinition()
                     .name("stop_times")
@@ -515,6 +540,8 @@ public class GraphQLGtfsSchema {
             .field(MapFetcher.field("direction_id", GraphQLInt))
             .field(MapFetcher.field("use_frequency", GraphQLInt))
             .field(MapFetcher.field("name"))
+            .field(MapFetcher.field("official_length", GraphQLInt))
+            .field(MapFetcher.field("trip_type", GraphQLInt))
             .field(newFieldDefinition()
                     .name("shape")
                     .type(new GraphQLList(shapePointType))

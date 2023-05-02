@@ -44,6 +44,8 @@ public class Pattern extends Entity {
     public String name;
     public String route_id;
     public int direction_id = INT_MISSING;
+    public int official_length;
+    public int trip_type;
     public static Joiner joiner = Joiner.on("-").skipNulls();
     public String feed_id;
 
@@ -95,6 +97,9 @@ public class Pattern extends Entity {
         else{
             name = joiner.join(orderedStops);
         }
+        // add official lenght and trip_type
+        this.official_length = exemplarTrip.official_length;
+        this.trip_type = exemplarTrip.trip_type;
 
         // TODO: Implement segmentIndex using JTS to segment out LineString by stops.
 
@@ -120,5 +125,8 @@ public class Pattern extends Entity {
         setIntParameter(statement, oneBasedIndex++, INT_MISSING); // use_frequency
         // FIXME: Shape set might be null?
         statement.setString(oneBasedIndex++, associatedShapes.iterator().next());
+        // 5t official_length and trip_type,
+        setIntParameter(statement, oneBasedIndex++, official_length);
+        setIntParameter(statement, oneBasedIndex++, trip_type);
     }
 }

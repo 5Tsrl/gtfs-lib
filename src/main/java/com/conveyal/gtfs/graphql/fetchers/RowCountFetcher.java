@@ -38,6 +38,7 @@ public class RowCountFetcher implements DataFetcher {
     // Filter field is optionally dynamic if an entity ID argument is provided for the groupByField.
     private final String filterField;
     private final String groupByField;
+    private final String distinctCounterField; //5t
 
     public RowCountFetcher(String tableName) {
         this(tableName, null, null);
@@ -51,6 +52,14 @@ public class RowCountFetcher implements DataFetcher {
         this.tableName = tableName;
         this.filterField = filterField;
         this.groupByField = groupByField;
+        this.distinctCounterField = null; //5t
+    }
+
+    public RowCountFetcher(String tableName, String filterField, String groupByField, String distinctCounterField) {
+        this.tableName = tableName;
+        this.filterField = filterField;
+        this.groupByField = groupByField;
+        this.distinctCounterField = distinctCounterField;
     }
 
     @Override
@@ -64,7 +73,11 @@ public class RowCountFetcher implements DataFetcher {
         try {
             connection = GTFSGraphQL.getConnection();
             List<String> fields = new ArrayList<>();
+            if(this.distinctCounterField != null){
+              fields.add(String.format("count(distinct %s) ", this.distinctCounterField));
+            } else {
             fields.add("count(*)");
+            }
             List<String> clauses = new ArrayList<>();
             if (filterField != null) {
                 // FIXME Does this handle null cases?
@@ -165,6 +178,20 @@ public class RowCountFetcher implements DataFetcher {
                 .name(fieldName)
                 .type(GraphQLInt)
                 .dataFetcher(new RowCountFetcher(tableName, filterField))
+                .build();
+    }
+
+    /**
+     * Convenience method to create a field in a GraphQL schema that fetches the number of rows in a table with a filter
+     * or where clause. If a filter field is provided, count only the rows that match the parent entity's value for the
+     * given field. For example, adding a trip_count field to routes (filter field route_id) would add a trip count to
+     * each route entity with the number of trips that operate under each route's route_id.
+     */
+    public static GraphQLFieldDefinition field (String fieldName, String tableName, String filterField, String distinctCounterField) {
+        return newFieldDefinition()
+                .name(fieldName)
+                .type(GraphQLInt)
+                .dataFetcher(new RowCountFetcher(tableName, filterField, distinctCounterField))
                 .build();
     }
 

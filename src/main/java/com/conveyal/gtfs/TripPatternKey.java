@@ -16,7 +16,7 @@ import static com.conveyal.gtfs.model.Entity.INT_MISSING;
  * stops on two different routes makes two different patterns.
  * These objects are not intended for use outside the grouping process.
  */
-public class TripPatternKey {
+public class TripPatternKey implements Comparable<TripPatternKey>{
 
     public String routeId;
     public List<String> stops = new ArrayList<>();
@@ -82,5 +82,12 @@ public class TripPatternKey {
         result = 31 * result + (dropoffTypes != null ? dropoffTypes.hashCode() : 0);
         return result;
     }
+
+
+    @Override
+    public int compareTo(TripPatternKey tpk) {
+            return this.routeId.compareTo(tpk.routeId) <= 0 ? -1 : 1 ;	
+    }
+
 
 }

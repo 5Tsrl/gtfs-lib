@@ -95,7 +95,7 @@ public class JdbcGtfsExporter {
             String whereRouteIsApproved = String.format("where %s.%s.status = 2", feedIdToExport, Table.ROUTES.name);
             // Export each table in turn (by placing entry in zip output stream).
             result.agency = export(Table.AGENCY, connection);
-            if (fromEditor) {
+            /* 5t if (fromEditor) {
                 // only export calendar entries that have at least one day of service set
                 // this could happen in cases where a feed was imported that only had calendar_dates.txt
                 result.calendar = export(
@@ -106,9 +106,9 @@ public class JdbcGtfsExporter {
                         "WHERE monday=1 OR tuesday=1 OR wednesday=1 OR thursday=1 OR friday=1 OR saturday=1 OR sunday=1"
                     )
                 );
-            } else {
-                result.calendar = export(Table.CALENDAR, connection);
-            }
+            } else {*/
+            result.calendar = export(Table.CALENDAR, connection);
+            /* 5t }
             if (fromEditor) {
                 // Export schedule exceptions in place of calendar dates if exporting a feed/schema that represents an editor snapshot.
                 GTFSFeed feed = new GTFSFeed();
@@ -179,10 +179,10 @@ public class JdbcGtfsExporter {
                     //     This will result in an invalid GTFS, but it was what the user wanted so ¯\_(ツ)_/¯
                     result.calendarDates = export(Table.CALENDAR_DATES, connection);
                 }
-            } else {
+            } else {*/
                 // Otherwise, simply export the calendar dates as they were loaded in.
-                result.calendarDates = export(Table.CALENDAR_DATES, connection);
-            }
+            result.calendarDates = export(Table.CALENDAR_DATES, connection);
+            /* 5t }*/
             result.fareAttributes = export(Table.FARE_ATTRIBUTES, connection);
             result.fareRules = export(Table.FARE_RULES, connection);
             result.feedInfo = export(Table.FEED_INFO, connection);
