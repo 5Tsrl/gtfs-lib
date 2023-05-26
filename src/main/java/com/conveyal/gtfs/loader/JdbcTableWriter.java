@@ -18,6 +18,7 @@ import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import org.apache.commons.dbutils.DbUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1572,10 +1573,38 @@ public class JdbcTableWriter implements TableWriter {
                             // FIXME: is this where a delete hook should go? (E.g., CalendarController subclass would override
                             //  deleteEntityHook).
                             if (sqlMethod.equals(SqlMethod.DELETE)) {
+                                ArrayList<String> patternAndRouteIds = new ArrayList<>();
                                 // Check for restrictions on delete.
                                 if (table.isCascadeDeleteRestricted()) {
                                     // The entity must not have any referencing entities in order to delete it.
                                     connection.rollback();
+                                    if (entityClass.getSimpleName().equals("Stop")) {
+                                        String patternStopLookup = String.format(
+                                            "select distinct p.id, r.id " +
+                                            "from %s.pattern_stops ps " +
+                                            "inner join " +
+                                            "%s.patterns p " +
+                                            "on p.pattern_id = ps.pattern_id " +
+                                            "inner join " +
+                                            "%s.routes r " +
+                                            "on p.route_id = r.route_id " +
+                                            "where %s = '%s'",
+                                            namespace,
+                                            namespace,
+                                            namespace,
+                                            keyField.name,
+                                            keyValue
+                                        );
+                                        PreparedStatement patternStopSelectStatement = connection.prepareStatement(patternStopLookup);
+                                        if (patternStopSelectStatement.execute()) {
+                                            ResultSet resultSet = patternStopSelectStatement.getResultSet();
+                                            while (resultSet.next()) {
+                                                patternAndRouteIds.add(
+                                                    "{" + resultSet.getString(1) + "-" + resultSet.getString(2) + "}"
+                                                );
+                                            }
+                                        }
+                                    }
                                     String message = String.format(
                                             "Impossibile cancellare questo/a %s con %s=%s.  %d %s riferisce questo/a %s.",
                                             entityClass.getSimpleName(),
@@ -1585,6 +1614,14 @@ public class JdbcTableWriter implements TableWriter {
                                             referencingTable.name,
                                             entityClass.getSimpleName()
                                     );
+                                    if (patternAndRouteIds.size() > 0) {
+                                        // Append referenced patterns data to the end of the error.
+                                        message = String.format(
+                                            "%s\nReferenced patterns: [%s]",
+                                                message,
+                                                StringUtils.join(patternAndRouteIds, ",")
+                                        );
+                                    }
                                     LOG.warn(message);
                                     throw new SQLException(message);
                                 }
