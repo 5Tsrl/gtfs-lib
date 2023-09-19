@@ -106,7 +106,12 @@ public class GraphQLGtfsSchema {
                     .build())
             .build();
 
-    private static final GraphQLScalarType stringList = new GraphQLScalarType("StringList", "List of Strings", new StringCoercing());
+    private static final GraphQLScalarType stringList = GraphQLScalarType
+        .newScalar()
+        .name("StringList")
+        .description("List of Strings")
+        .coercing(new StringCoercing())
+        .build();
 
     // Represents GTFS Editor service exceptions.
     public static final GraphQLObjectType scheduleExceptionType = newObject().name("scheduleException")
