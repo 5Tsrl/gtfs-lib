@@ -54,7 +54,7 @@ public enum NewGTFSErrorType {
     ROUTE_UNUSED(Priority.HIGH, "Questa linea è definita ma non ha corse."),
     SERVICE_NEVER_ACTIVE(Priority.MEDIUM, "Il service code non è attivo in alcuna data."),
     SERVICE_UNUSED(Priority.MEDIUM, "Il service code non è utilizzato da alcuna corsa."),
-    SERVICE_WITHOUT_DAYS_OF_WEEK(Priority.MEDIUM, "Il service code è presente nel file calendar.txt ma non indica alcun giorno della settimana."),
+    SERVICE_WITHOUT_DAYS_OF_WEEK(Priority.MEDIUM, "Il Calendario non definisce alcun giorno della settimana come validità di base."),
     SHAPE_DIST_TRAVELED_NOT_INCREASING(Priority.MEDIUM, "La shape distance traveled deve essere incrementale con gli orari dei passaggi in fermata."),
     SHAPE_MISSING_COORDINATE(Priority.MEDIUM, "La geometria ha alcune coordinate mancanti"),
     SHAPE_REVERSED(Priority.MEDIUM, "Un percorso sembra sia associato a veicoli che percorrono la direzione opposta della linea."),
@@ -90,9 +90,9 @@ public enum NewGTFSErrorType {
     FIELD_VALUE_TOO_LONG(Priority.MEDIUM, "Il campo ha troppi caratteri."),
 
     // Shared Stops-specifc errors.
-    MULTIPLE_SHARED_STOPS_GROUPS(Priority.HIGH, "A GTFS stop belongs to more than one shared-stop group."),
-    SHARED_STOP_GROUP_MUTLIPLE_PRIMARY_STOPS(Priority.HIGH, "A Shared-stop group has multiple primary stops."),
-    SHARED_STOP_GROUP_ENTITY_DOES_NOT_EXIST(Priority.MEDIUM, "The stop referenced by a shared-stop does not exist."),
+    MULTIPLE_SHARED_STOPS_GROUPS(Priority.HIGH, "Una fermata appartiene a più di un gruppo di fermate."),
+    SHARED_STOP_GROUP_MUTLIPLE_PRIMARY_STOPS(Priority.HIGH, "Un gruppo di fermate ha più di una fermata principale."),
+    SHARED_STOP_GROUP_ENTITY_DOES_NOT_EXIST(Priority.MEDIUM, "Un gruppo di fermate fa riferimento ad una fermata inesistente."),
 
     // Unknown errors.
     OTHER(Priority.LOW, "Altri errori.");
