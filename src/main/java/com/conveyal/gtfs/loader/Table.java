@@ -105,6 +105,9 @@ public class Table {
     /** Key(s) that uniquely identify an entry in the respective table.*/
     private String[] primaryKeyNames;
 
+    /** Prefixed to exported tables/files that are not part of the GTFS spec. */
+    public static final String PROPRIETARY_FILE_PREFIX = "datatools_";
+
     public Table (String name, Class<? extends Entity> entityClass, Requirement required, Field... fields) {
         // TODO: verify table name is OK for use in constructing dynamic SQL queries
         this.name = name;
@@ -153,7 +156,6 @@ public class Table {
 
     public static final Table SCHEDULE_EXCEPTIONS = new Table("schedule_exceptions", ScheduleException.class, EDITOR,
             new StringField("name", REQUIRED), // FIXME: This makes name the key field...
-            // FIXME: Change to DateListField
             new DateListField("dates", REQUIRED),
             new ShortField("exemplar", REQUIRED, 9),
             new StringListField("custom_schedule", OPTIONAL),//5t .isReferenceTo(CALENDAR),
@@ -162,7 +164,7 @@ public class Table {
     );
 
     public static final Table CALENDAR_DATES = new Table("calendar_dates", CalendarDate.class, OPTIONAL,
-        new StringField("service_id", REQUIRED).isReferenceTo(CALENDAR),
+        new StringField("service_id", REQUIRED),
         new DateField("date", REQUIRED),
         new IntegerField("exception_type", REQUIRED, 1, 2)
     ).keyFieldIsNotUnique()
@@ -333,23 +335,11 @@ public class Table {
     ).withParentTable(PATTERNS)
     .addPrimaryKeyNames("pattern_id", "stop_sequence");
 
-    public static final Table TRANSFERS = new Table("transfers", Transfer.class, OPTIONAL,
-            // FIXME: Do we need an index on from_ and to_stop_id
-            new StringField("from_stop_id", REQUIRED).isReferenceTo(STOPS),
-            new StringField("to_stop_id", REQUIRED).isReferenceTo(STOPS),
-            new ShortField("transfer_type", REQUIRED, 3),
-            new StringField("min_transfer_time", OPTIONAL)
-    ).addPrimaryKey()
-    .keyFieldIsNotUnique()
-    .hasCompoundKey()
-    .addPrimaryKeyNames("from_stop_id", "to_stop_id");
-
     public static final Table TRIPS = new Table("trips", Trip.class, REQUIRED,
         new StringField("trip_id", REQUIRED),
         new StringField("route_id", REQUIRED).isReferenceTo(ROUTES).indexThisColumn(),
-        // FIXME: Should this also optionally reference CALENDAR_DATES?
         // FIXME: Do we need an index on service_id
-        new StringField("service_id", REQUIRED).isReferenceTo(CALENDAR),
+        new StringField("service_id", REQUIRED).isReferenceTo(CALENDAR).isReferenceTo(CALENDAR_DATES).isReferenceTo(SCHEDULE_EXCEPTIONS),
         new StringField("trip_headsign", OPTIONAL),
         new StringField("trip_short_name", OPTIONAL),
         new ShortField("direction_id", OPTIONAL, 1),
@@ -371,6 +361,25 @@ public class Table {
 
     ).addPrimaryKey()
     .addPrimaryKeyNames("trip_id");
+
+    // Must come after TRIPS table to which it has references.
+    public static final Table TRANSFERS = new Table("transfers", Transfer.class, OPTIONAL,
+        // Conditionally required fields (from_stop_id, to_stop_id, from_trip_id and to_trip_id) are defined here as
+        // optional so as not to trigger required field checks as part of GTFS-lib validation. Correct validation of
+        // these fields will be managed by the MobilityData validator.
+        new StringField("from_stop_id", OPTIONAL).isReferenceTo(STOPS),
+        new StringField("to_stop_id", OPTIONAL).isReferenceTo(STOPS),
+        new StringField("from_route_id", OPTIONAL).isReferenceTo(ROUTES),
+        new StringField("to_route_id", OPTIONAL).isReferenceTo(ROUTES),
+        new StringField("from_trip_id", OPTIONAL).isReferenceTo(TRIPS),
+        new StringField("to_trip_id", OPTIONAL).isReferenceTo(TRIPS),
+        new ShortField("transfer_type", REQUIRED, 3),
+        new StringField("min_transfer_time", OPTIONAL)
+    )
+    .addPrimaryKey()
+    .keyFieldIsNotUnique()
+    .hasCompoundKey()
+    .addPrimaryKeyNames("from_stop_id", "to_stop_id", "from_trip_id", "to_trip_id", "from_route_id", "to_route_id");
 
     // Must come after TRIPS and STOPS table to which it has references
     public static final Table STOP_TIMES = new Table("stop_times", StopTime.class, REQUIRED,
@@ -639,6 +648,23 @@ public class Table {
         );
     }
 
+    public static String getTableFileNameWithExtension(String tableName) {
+        return getTableFileName(tableName, ".txt");
+    }
+
+    public static String getTableFileName(String tableName) {
+        return getTableFileName(tableName, "");
+    }
+
+    /**
+     * Proprietary table file names are prefix with "datatools_" to distinguish them from GTFS spec files.
+     */
+    private static String getTableFileName(String tableName, String fileExtension) {
+        return (tableName.equals("patterns"))
+            ? String.format("%s%s%s", PROPRIETARY_FILE_PREFIX, tableName, fileExtension)
+            : String.format("%s%s", tableName, fileExtension);
+    }
+
     /**
      * In GTFS feeds, all files are supposed to be in the root of the zip file, but feed producers often put them
      * in a subdirectory. This function will search subdirectories if the entry is not found in the root.
@@ -646,7 +672,7 @@ public class Table {
      * It then creates a CSV reader for that table if it's found.
      */
     public CsvReader getCsvReader(ZipFile zipFile, SQLErrorStorage sqlErrorStorage) {
-        final String tableFileName = this.name + ".txt";
+        final String tableFileName = getTableFileNameWithExtension(this.name);
         ZipEntry entry = zipFile.getEntry(tableFileName);
         if (entry == null) {
             // Table was not found, check if it is in a subdirectory.

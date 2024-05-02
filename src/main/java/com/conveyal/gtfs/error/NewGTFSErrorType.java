@@ -35,6 +35,7 @@ public enum NewGTFSErrorType {
     MISSING_ARRIVAL_OR_DEPARTURE(Priority.MEDIUM, "È richiesto che il primo e l'ultimo passaggio in fermata abbiano sia l'orario di arrivo che di partenza."),
     MISSING_COLUMN(Priority.MEDIUM, "Una colonna obbligatoria non è presente nella tabella."),
     MISSING_FIELD(Priority.MEDIUM, "Manca un campo richiesto o è vuoto in una specifica riga."),
+    MISSING_FOREIGN_TABLE_REFERENCE(Priority.HIGH, "Questo oggetto si riferisce ad un ID che deve esistere in una sola tabella di riferimento."),
     MISSING_SHAPE(Priority.MEDIUM, "Manca la geometria di un percorso"),
     MISSING_TABLE(Priority.MEDIUM, "Questa tabella è richiesta dalla specifica GTFS ma non è presente."),
     MULTIPLE_SHAPES_FOR_PATTERN(Priority.MEDIUM, "Più percorsi trovati per una singola sequenza di fermate (es. trip pattern)."),

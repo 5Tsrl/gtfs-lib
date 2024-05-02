@@ -23,13 +23,16 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -43,6 +46,9 @@ public class JdbcGtfsExporter {
     private final String outFile;
     private final DataSource dataSource;
     private final boolean fromEditor;
+
+    /** If this is true will export tables prefixed with {@link Table#PROPRIETARY_FILE_PREFIX} **/
+    private final boolean publishProprietaryFiles;
 
     // These fields will be filled in once feed snapshot begins.
     private Connection connection;
@@ -60,18 +66,23 @@ public class JdbcGtfsExporter {
         Table.TRIPS.fileName
     );
 
+    public static final List<String> proprietaryFileList = Lists.newArrayList(
+        String.format("%s%s", Table.PROPRIETARY_FILE_PREFIX, Table.PATTERNS.fileName)
+    );
 
-    public JdbcGtfsExporter(String feedId, String outFile, DataSource dataSource, boolean fromEditor) {
+
+    public JdbcGtfsExporter(String feedId, String outFile, DataSource dataSource, boolean fromEditor, boolean publishProprietaryFiles) {
         this.feedIdToExport = feedId;
         this.outFile = outFile;
         this.dataSource = dataSource;
         this.fromEditor = fromEditor;
+        this.publishProprietaryFiles = publishProprietaryFiles;
     }
 
     /**
      * Utility method to check if an exception uses a specific service.
      */
-    public Boolean exceptionInvolvesService(ScheduleException ex, String serviceId) {
+    public boolean exceptionInvolvesService(ScheduleException ex, String serviceId) {
         return (
             ex.addedService.contains(serviceId) ||
             ex.removedService.contains(serviceId) ||
@@ -91,7 +102,7 @@ public class JdbcGtfsExporter {
         FeedLoadResult result = new FeedLoadResult();
 
         try {
-            zipOutputStream = new ZipOutputStream(new FileOutputStream(outFile));
+            zipOutputStream = new ZipOutputStream(Files.newOutputStream(Paths.get(outFile)));
             long startTime = System.currentTimeMillis();
             // We get a single connection object and share it across several different methods.
             // This ensures that actions taken in one method are visible to all subsequent SQL statements.
@@ -124,40 +135,55 @@ public class JdbcGtfsExporter {
             if (fromEditor) {
                 // Export schedule exceptions in place of calendar dates if exporting a feed/schema that represents an editor snapshot.
                 GTFSFeed feed = new GTFSFeed();
-                // FIXME: The below table readers should probably just share a connection with the exporter.
-                JDBCTableReader<ScheduleException> exceptionsReader =
-                        new JDBCTableReader(Table.SCHEDULE_EXCEPTIONS, dataSource, feedIdToExport + ".",
-                                EntityPopulator.SCHEDULE_EXCEPTION);
-                JDBCTableReader<Calendar> calendarsReader =
-                        new JDBCTableReader(Table.CALENDAR, dataSource, feedIdToExport + ".",
-                                EntityPopulator.CALENDAR);
-                Iterable<Calendar> calendars = calendarsReader.getAll();
+                JDBCTableReader<ScheduleException> exceptionsReader =new JDBCTableReader(
+                    Table.SCHEDULE_EXCEPTIONS,
+                    dataSource,
+                    feedIdToExport + ".",
+                    EntityPopulator.SCHEDULE_EXCEPTION
+                );
+                JDBCTableReader<Calendar> calendarReader = JDBCTableReader.getCalendarTableReader(dataSource, feedIdToExport);
+                Iterable<Calendar> calendars = calendarReader.getAll();
                 Iterable<ScheduleException> exceptionsIterator = exceptionsReader.getAll();
-                List<ScheduleException> exceptions = new ArrayList<>();
-                // FIXME: Doing this causes the connection to stay open, but it is closed in the finalizer so it should
-                // not be a big problem.
-                for (ScheduleException exception : exceptionsIterator) {
-                    exceptions.add(exception);
+                List<ScheduleException> calendarExceptions = new ArrayList<>();
+                List<ScheduleException> calendarDateExceptions = new ArrayList<>();
+                // Separate distinct calendar date exceptions from those associated with calendars.
+                for (ScheduleException ex : exceptionsIterator) {
+                    if (ex.exemplar.equals(ScheduleException.ExemplarServiceDescriptor.CALENDAR_DATE_SERVICE)) {
+                        calendarDateExceptions.add(ex);
+                    } else {
+                        calendarExceptions.add(ex);
+                    }
                 }
+
+                int calendarDateCount = calendarDateExceptions.size();
+                // Extract calendar date services, convert to calendar date and add to the feed.
+                for (ScheduleException ex : calendarDateExceptions) {
+                    for (LocalDate date : ex.dates) {
+                        String serviceId = ex.customSchedule.get(0);
+                        CalendarDate calendarDate = new CalendarDate();
+                        calendarDate.date = date;
+                        calendarDate.service_id = serviceId;
+                        calendarDate.exception_type = 1;
+                        Service service = new Service(serviceId);
+                        service.calendar_dates.put(date, calendarDate);
+                        // If the calendar dates provided contain duplicates (e.g. two or more identical service ids
+                        // that are NOT associated with a calendar) only the first entry would persist export. To
+                        // resolve this a unique key consisting of service id and date is used.
+                        feed.services.put(String.format("%s-%s", calendarDate.service_id, calendarDate.date), service);
+                    }
+                }
+
                 // check whether the feed is organized in a format with the calendars.txt file
-                if (calendarsReader.getRowCount() > 0) {
+                if (calendarReader.getRowCount() > 0) {
                     // feed does have calendars.txt file, continue export with strategy of matching exceptions
                     // to calendar to output calendar_dates.txt
-                    int calendarDateCount = 0;
                     for (Calendar cal : calendars) {
                         Service service = new Service(cal.service_id);
                         service.calendar = cal;
-                        for (ScheduleException ex : exceptions.stream()
+                        for (ScheduleException ex : calendarExceptions.stream()
                             .filter(ex -> exceptionInvolvesService(ex, cal.service_id))
                             .collect(Collectors.toList())
                         ) {
-                            if (ex.exemplar.equals(ScheduleException.ExemplarServiceDescriptor.SWAP) &&
-                                (!ex.addedService.contains(cal.service_id) && !ex.removedService.contains(cal.service_id))) {
-                                // Skip swap exception if cal is not referenced by added or removed service.
-                                // This is not technically necessary, but the output is cleaner/more intelligible.
-                                continue;
-                            }
-
                             for (LocalDate date : ex.dates) {
                                 if (date.isBefore(cal.start_date) || date.isAfter(cal.end_date)) {
                                     // No need to write dates that do not apply
@@ -171,7 +197,7 @@ public class JdbcGtfsExporter {
                                 LOG.info("Adding exception {} (type={}) for calendar {} on date {}", ex.name, calendarDate.exception_type, cal.service_id, date);
 
                                 if (service.calendar_dates.containsKey(date))
-                                    throw new IllegalArgumentException("Duplicate schedule exceptions on " + date.toString());
+                                    throw new IllegalArgumentException("Duplicate schedule exceptions on " + date);
 
                                 service.calendar_dates.put(date, calendarDate);
                                 calendarDateCount += 1;
@@ -179,14 +205,16 @@ public class JdbcGtfsExporter {
                         }
                         feed.services.put(cal.service_id, service);
                     }
-                    if (calendarDateCount == 0) {
-                        LOG.info("No calendar dates found. Skipping table.");
-                    } else {
-                        LOG.info("Writing {} calendar dates from schedule exceptions", calendarDateCount);
-                        new CalendarDate.Writer(feed).writeTable(zipOutputStream);
-                    }
+                }
+                if (calendarDateCount == 0) {
+                    LOG.info("No calendar dates found. Skipping table.");
                 } else {
-                    // No calendar records exist, export calendar_dates as is and hope for the best.
+                    LOG.info("Writing {} calendar dates from schedule exceptions", calendarDateCount);
+                    new CalendarDate.Writer(feed).writeTable(zipOutputStream);
+                }
+
+                if (calendarReader.getRowCount() == 0 && calendarDateExceptions.isEmpty()) {
+                    // No calendar or calendar date service records exist, export calendar_dates as is and hope for the best.
                     // This situation will occur in at least 2 scenarios:
                     // 1.  A GTFS has been loaded into the editor that had only the calendar_dates.txt file
                     //     and no further edits were made before exporting to a snapshot
@@ -242,11 +270,6 @@ public class JdbcGtfsExporter {
                 result.routes = export(Table.ROUTES, connection);
             }
 
-            // FIXME: Find some place to store errors encountered on export for patterns and pattern stops.
-            // FIXME: Is there a need to export patterns or pattern stops? Should these be iterated over to ensure that
-            // frequency-based pattern travel times match stop time arrivals/departures?
-//            export(Table.PATTERNS);
-//            export(Table.PATTERN_STOP);
             // Only write shapes for "approved" routes using COPY TO with results of select query
             if (fromEditor) {
                 // Generate filter SQL for shapes if exporting a feed/schema that represents an editor snapshot.
@@ -324,6 +347,8 @@ public class JdbcGtfsExporter {
                 result.trips = export(Table.TRIPS, connection);
             }
 
+            exportProprietaryFiles(result);
+
             zipOutputStream.close();
             // Run clean up on the resulting zip file.
             cleanUpZipFile();
@@ -342,6 +367,18 @@ public class JdbcGtfsExporter {
             if (connection != null) DbUtils.closeQuietly(connection);
         }
         return result;
+    }
+
+    /**
+     * Export proprietary files, if they are required.
+     */
+    private void exportProprietaryFiles(FeedLoadResult result) {
+        if (publishProprietaryFiles) {
+            LOG.info("Exporting proprietary files.");
+            result.patterns = export(Table.PATTERNS, connection);
+        } else {
+            LOG.info("Proprietary files not exported.");
+        }
     }
 
     /**
@@ -412,7 +449,7 @@ public class JdbcGtfsExporter {
             }
 
             // Create entry for table
-            String textFileName = table.name + ".txt";
+            String textFileName = Table.getTableFileNameWithExtension(table.name);
             ZipEntry zipEntry = new ZipEntry(textFileName);
             zipOutputStream.putNextEntry(zipEntry);
 

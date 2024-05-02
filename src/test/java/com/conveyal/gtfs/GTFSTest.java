@@ -5,6 +5,7 @@ import com.conveyal.gtfs.error.NewGTFSErrorType;
 import com.conveyal.gtfs.loader.FeedLoadResult;
 import com.conveyal.gtfs.loader.JdbcGtfsExporter;
 import com.conveyal.gtfs.loader.SnapshotResult;
+import com.conveyal.gtfs.loader.Table;
 import com.conveyal.gtfs.storage.ErrorExpectation;
 import com.conveyal.gtfs.storage.ExpectedFieldType;
 import com.conveyal.gtfs.storage.PersistenceExpectation;
@@ -16,7 +17,6 @@ import com.conveyal.gtfs.validator.ValidationResult;
 import com.csvreader.CsvReader;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-import com.google.common.io.Files;
 import graphql.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.input.BOMInputStream;
@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -129,12 +130,20 @@ public class GTFSTest {
      * Tests that a GTFS feed with bad date values in calendars.txt and calendar_dates.txt can pass the integration test.
      */
     @Test
-    public void canLoadFeedWithBadDates () {
+    void canLoadFeedWithBadDates () {
         PersistenceExpectation[] expectations = PersistenceExpectation.list(
             new PersistenceExpectation(
                 "calendar",
                 new RecordExpectation[]{
                     new RecordExpectation("start_date", null)
+                }
+            ),
+            new PersistenceExpectation(
+                "calendar_dates",
+                new RecordExpectation[]{
+                    new RecordExpectation("service_id", "123_ID_NOT_EXISTS"),
+                    new RecordExpectation("date", "20190301"),
+                    new RecordExpectation("exception_type", "1")
                 }
             )
         );
@@ -143,7 +152,6 @@ public class GTFSTest {
             new ErrorExpectation(NewGTFSErrorType.DATE_FORMAT),
             new ErrorExpectation(NewGTFSErrorType.DATE_FORMAT),
             new ErrorExpectation(NewGTFSErrorType.DATE_FORMAT),
-            new ErrorExpectation(NewGTFSErrorType.REFERENTIAL_INTEGRITY),
             new ErrorExpectation(NewGTFSErrorType.DATE_FORMAT),
             new ErrorExpectation(NewGTFSErrorType.DATE_FORMAT),
             // The below "wrong number of fields" errors are for empty new lines
@@ -153,7 +161,7 @@ public class GTFSTest {
             new ErrorExpectation(NewGTFSErrorType.WRONG_NUMBER_OF_FIELDS),
             new ErrorExpectation(NewGTFSErrorType.WRONG_NUMBER_OF_FIELDS),
             new ErrorExpectation(NewGTFSErrorType.WRONG_NUMBER_OF_FIELDS),
-            new ErrorExpectation(NewGTFSErrorType.REFERENTIAL_INTEGRITY),
+            new ErrorExpectation(NewGTFSErrorType.MISSING_FOREIGN_TABLE_REFERENCE),
             new ErrorExpectation(NewGTFSErrorType.ROUTE_LONG_NAME_CONTAINS_SHORT_NAME),
             new ErrorExpectation(NewGTFSErrorType.FEED_TRAVEL_TIMES_ROUNDED),
             new ErrorExpectation(NewGTFSErrorType.SERVICE_NEVER_ACTIVE),
@@ -246,12 +254,12 @@ public class GTFSTest {
      * Tests whether or not "fake-agency" GTFS can be placed in a zipped subdirectory and loaded/exported successfully.
      */
     @Test
-    public void canLoadAndExportSimpleAgencyInSubDirectory() {
+    public void canLoadAndExportSimpleAgencyInSubDirectory() throws IOException {
         String zipFileName = null;
         // Get filename for fake-agency resource
         String resourceFolder = TestUtils.getResourceFileName("fake-agency");
         // Recursively copy folder into temp directory, which we zip up and run the integration test on.
-        File tempDir = Files.createTempDir();
+        File tempDir = Files.createTempDirectory("").toFile();
         tempDir.deleteOnExit();
         File nestedDir = new File(TestUtils.fileNameWithDir(tempDir.getAbsolutePath(), "fake-agency"));
         LOG.info("Creating temp folder with nested subdirectory at {}", tempDir.getAbsolutePath());
@@ -265,6 +273,7 @@ public class GTFSTest {
             new ErrorExpectation(NewGTFSErrorType.TABLE_IN_SUBDIRECTORY),
             new ErrorExpectation(NewGTFSErrorType.TABLE_IN_SUBDIRECTORY),
             new ErrorExpectation(NewGTFSErrorType.MISSING_FIELD),
+            new ErrorExpectation(NewGTFSErrorType.TABLE_IN_SUBDIRECTORY),
             new ErrorExpectation(NewGTFSErrorType.TABLE_IN_SUBDIRECTORY),
             new ErrorExpectation(NewGTFSErrorType.TABLE_IN_SUBDIRECTORY),
             new ErrorExpectation(NewGTFSErrorType.TABLE_IN_SUBDIRECTORY),
@@ -414,18 +423,6 @@ public class GTFSTest {
                     new RecordExpectation("exception_type", 2)
                 }
             ),
-            // calendar-dates.txt-only expectation
-            new PersistenceExpectation(
-                "calendar",
-                new RecordExpectation[]{
-                    new RecordExpectation(
-                        "service_id", "only-in-calendar-dates-txt"
-                    ),
-                    new RecordExpectation("start_date", 20170916),
-                    new RecordExpectation("end_date", 20170916)
-                },
-                true
-            ),
             new PersistenceExpectation(
                 "calendar_dates",
                 new RecordExpectation[]{
@@ -433,6 +430,46 @@ public class GTFSTest {
                         "service_id", "only-in-calendar-dates-txt"
                     ),
                     new RecordExpectation("date", 20170916),
+                    new RecordExpectation("exception_type", 1)
+                }
+            ),
+            new PersistenceExpectation(
+                "calendar_dates",
+                new RecordExpectation[]{
+                    new RecordExpectation(
+                        "service_id", "calendar-dates-txt-service-one"
+                    ),
+                    new RecordExpectation("date", 20170917),
+                    new RecordExpectation("exception_type", 1)
+                }
+            ),
+            new PersistenceExpectation(
+                "calendar_dates",
+                new RecordExpectation[]{
+                    new RecordExpectation(
+                        "service_id", "calendar-dates-txt-service-two"
+                    ),
+                    new RecordExpectation("date", 20170918),
+                    new RecordExpectation("exception_type", 1)
+                }
+            ),
+            new PersistenceExpectation(
+                "calendar_dates",
+                new RecordExpectation[]{
+                    new RecordExpectation(
+                        "service_id", "calendar-dates-txt-service-three"
+                    ),
+                    new RecordExpectation("date", 20170917),
+                    new RecordExpectation("exception_type", 1)
+                }
+            ),
+            new PersistenceExpectation(
+                "calendar_dates",
+                new RecordExpectation[]{
+                    new RecordExpectation(
+                        "service_id", "calendar-dates-txt-service-three"
+                    ),
+                    new RecordExpectation("date", 20170918),
                     new RecordExpectation("exception_type", 1)
                 }
             ),
@@ -512,7 +549,9 @@ public class GTFSTest {
         ErrorExpectation[] errorExpectations = ErrorExpectation.list(
             new ErrorExpectation(NewGTFSErrorType.MISSING_FIELD),
             new ErrorExpectation(NewGTFSErrorType.ROUTE_LONG_NAME_CONTAINS_SHORT_NAME),
-            new ErrorExpectation(NewGTFSErrorType.FEED_TRAVEL_TIMES_ROUNDED)
+            new ErrorExpectation(NewGTFSErrorType.ROUTE_LONG_NAME_CONTAINS_SHORT_NAME),
+            new ErrorExpectation(NewGTFSErrorType.FEED_TRAVEL_TIMES_ROUNDED),
+            new ErrorExpectation(NewGTFSErrorType.SERVICE_UNUSED)
         );
         assertThat(
             runIntegrationTestOnFolder(
@@ -633,13 +672,40 @@ public class GTFSTest {
             }
 
             // Confirm that the mandatory files are present in the zip file.
-            tempFile = exportGtfs(namespace, dataSource, false);
+            tempFile = exportGtfs(namespace, dataSource, false, true);
             ZipFile gtfsZipFile = new ZipFile(tempFile.getAbsolutePath());
             for (String fileName : JdbcGtfsExporter.mandatoryFileList) {
                 Assert.assertNotNull(gtfsZipFile.getEntry(fileName));
             }
         } catch (IOException | SQLException e) {
             LOG.error("An error occurred while attempting to test exporting of mandatory files.", e);
+        } finally {
+            TestUtils.dropDB(testDBName);
+            if (tempFile != null) tempFile.deleteOnExit();
+        }
+    }
+    /**
+     * Load a feed and then export minus proprietary files. Confirm proprietary files are not present in export.
+     */
+    @Test
+    void canOmitProprietaryFiles() {
+        String testDBName = TestUtils.generateNewDB();
+        File tempFile = null;
+        try {
+            String zipFileName = TestUtils.zipFolderFiles("fake-agency", true);
+            String dbConnectionUrl = String.join("/", JDBC_URL, testDBName);
+            DataSource dataSource = TestUtils.createTestDataSource(dbConnectionUrl);
+            FeedLoadResult loadResult = GTFS.load(zipFileName, dataSource);
+            String namespace = loadResult.uniqueIdentifier;
+
+            // Confirm that the proprietary files are not present in the zip file.
+            tempFile = exportGtfs(namespace, dataSource, false, false);
+            ZipFile gtfsZipFile = new ZipFile(tempFile.getAbsolutePath());
+            for (String fileName : JdbcGtfsExporter.proprietaryFileList) {
+                Assert.assertNull(gtfsZipFile.getEntry(fileName));
+            }
+        } catch (IOException e) {
+            LOG.error("An error occurred while attempting to test exporting of proprietary files.", e);
         } finally {
             TestUtils.dropDB(testDBName);
             if (tempFile != null) tempFile.deleteOnExit();
@@ -691,7 +757,7 @@ public class GTFSTest {
 
             // Verify that exporting the feed (in non-editor mode) completes and data is outputted properly
             LOG.info("export GTFS from created namespace");
-            File tempFile = exportGtfs(namespace, dataSource, false);
+            File tempFile = exportGtfs(namespace, dataSource, false, true);
             assertThatExportedGtfsMeetsExpectations(tempFile, persistenceExpectations, false);
 
             // Verify that making a snapshot from an existing feed database, then exporting that snapshot to a GTFS zip
@@ -792,9 +858,14 @@ public class GTFSTest {
     /**
      * Helper function to export a GTFS from the database to a temporary zip file.
      */
-    private File exportGtfs(String namespace, DataSource dataSource, boolean fromEditor) throws IOException {
+//    private File exportGtfs(String namespace, DataSource dataSource, boolean fromEditor) throws IOException {
+//        File tempFile = File.createTempFile("snapshot", ".zip");
+//        GTFS.export(namespace, tempFile.getAbsolutePath(), dataSource, fromEditor, false);
+//        return tempFile;
+//    }
+    private File exportGtfs(String namespace, DataSource dataSource, boolean fromEditor, boolean publishProprietaryFiles) throws IOException {
         File tempFile = File.createTempFile("snapshot", ".zip");
-        GTFS.export(namespace, tempFile.getAbsolutePath(), dataSource, fromEditor);
+        GTFS.export(namespace, tempFile.getAbsolutePath(), dataSource, fromEditor, publishProprietaryFiles);
         return tempFile;
     }
 
@@ -831,7 +902,7 @@ public class GTFSTest {
                 true
             );
             LOG.info("export GTFS from copied namespace");
-            File tempFile = exportGtfs(copyResult.uniqueIdentifier, dataSource, true);
+            File tempFile = exportGtfs(copyResult.uniqueIdentifier, dataSource, true, true);
             assertThatExportedGtfsMeetsExpectations(tempFile, persistenceExpectations, true);
         } catch (IOException | SQLException e) {
             e.printStackTrace();
@@ -1014,7 +1085,7 @@ public class GTFSTest {
             if (persistenceExpectation.appliesToEditorDatabaseOnly) continue;
             // No need to check that errors were exported because it is an internal table only.
             if ("errors".equals(persistenceExpectation.tableName)) continue;
-            final String tableFileName = persistenceExpectation.tableName + ".txt";
+            final String tableFileName = Table.getTableFileNameWithExtension(persistenceExpectation.tableName);
             LOG.info(String.format("reading table: %s", tableFileName));
 
             ZipEntry entry = gtfsZipfile.getEntry(tableFileName);
@@ -1211,16 +1282,6 @@ public class GTFSTest {
             }
         ),
         new PersistenceExpectation(
-            "calendar_dates",
-            new RecordExpectation[]{
-                new RecordExpectation(
-                    "service_id", "04100312-8fe1-46a5-a9f2-556f39478f57"
-                ),
-                new RecordExpectation("date", 20170916),
-                new RecordExpectation("exception_type", 2)
-            }
-        ),
-        new PersistenceExpectation(
             "fare_attributes",
             new RecordExpectation[]{
                 new RecordExpectation("fare_id", "route_based_fare"),
@@ -1269,6 +1330,17 @@ public class GTFSTest {
             }
         ),
         new PersistenceExpectation(
+            "patterns",
+            new RecordExpectation[]{
+                new RecordExpectation("pattern_id", "1"),
+                new RecordExpectation("route_id", "1"),
+                new RecordExpectation("name", "2 stops from Butler Ln to Scotts Valley Dr & Victor Sq (1 trips)"),
+                new RecordExpectation("direction_id", "0"),
+                new RecordExpectation("use_frequency", null),
+                new RecordExpectation("shape_id", "5820f377-f947-4728-ac29-ac0102cbc34e")
+            }
+        ),
+        new PersistenceExpectation(
             "shapes",
             new RecordExpectation[]{
                 new RecordExpectation(
@@ -1312,6 +1384,19 @@ public class GTFSTest {
                 ),
                 new RecordExpectation("bikes_allowed", 0),
                 new RecordExpectation("wheelchair_accessible", 0)
+            }
+        ),
+        new PersistenceExpectation(
+            "transfers",
+            new RecordExpectation[]{
+                new RecordExpectation("from_stop_id", "4u6g"),
+                new RecordExpectation("to_stop_id", "johv"),
+                new RecordExpectation("from_trip_id", "a30277f8-e50a-4a85-9141-b1e0da9d429d"),
+                new RecordExpectation("to_trip_id", "frequency-trip"),
+                new RecordExpectation("from_route_id", "1"),
+                new RecordExpectation("to_route_id", "1"),
+                new RecordExpectation("transfer_type", "1"),
+                new RecordExpectation("min_transfer_time", "60")
             }
         )
     };
