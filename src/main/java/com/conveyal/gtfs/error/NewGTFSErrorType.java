@@ -92,7 +92,7 @@ public enum NewGTFSErrorType {
 
     // Shared Stops-specifc errors.
     MULTIPLE_SHARED_STOPS_GROUPS(Priority.HIGH, "Una fermata appartiene a più di un gruppo di fermate."),
-    SHARED_STOP_GROUP_MUTLIPLE_PRIMARY_STOPS(Priority.HIGH, "Un gruppo di fermate ha più di una fermata principale."),
+    SHARED_STOP_GROUP_MULTIPLE_PRIMARY_STOPS(Priority.HIGH, "Un gruppo di fermate ha più di una fermata principale."),
     SHARED_STOP_GROUP_ENTITY_DOES_NOT_EXIST(Priority.MEDIUM, "Un gruppo di fermate fa riferimento ad una fermata inesistente."),
 
     // Unknown errors.
