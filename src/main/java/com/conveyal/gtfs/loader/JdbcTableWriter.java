@@ -160,6 +160,10 @@ public class JdbcTableWriter implements TableWriter {
             if (specTable.name.equals("patterns")) {
                 referencingTables.add(Table.SHAPES);
             }
+            // 5T: hacky hack hack to add calendar_dates table if we're updating a calendar.
+            if (specTable.name.equals("calendars")) {
+                referencingTables.add(Table.CALENDAR_DATES);
+            }
             // Iterate over referencing (child) tables and update those rows that reference the parent entity with the
             // JSON array for the key that matches the child table's name (e.g., trip.stop_times array will trigger
             // update of stop_times with matching trip_id).
