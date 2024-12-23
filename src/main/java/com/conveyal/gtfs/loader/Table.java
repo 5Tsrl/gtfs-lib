@@ -164,7 +164,7 @@ public class Table {
     );
 
     public static final Table CALENDAR_DATES = new Table("calendar_dates", CalendarDate.class, OPTIONAL,
-        new StringField("service_id", REQUIRED),
+        new StringField("service_id", REQUIRED).isReferenceTo(CALENDAR), //5t aggiunto isReferenceTo(CALENDAR)
         new DateField("date", REQUIRED),
         new IntegerField("exception_type", REQUIRED, 1, 2)
     ).keyFieldIsNotUnique()
